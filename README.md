@@ -99,9 +99,9 @@ scripts/isolated-demo.sh cleanup "$DIR"
 `.github/workflows/ci.yml` 有两个作业：
 
 - `Linux core tests (not a macOS build)`：在 Ubuntu 上运行 `swift test`。
-- `macOS build and tests`：在 `macos-14` 上运行 `swift test` 和 `swift build -c release --product FSMonitor`。
+- `macOS build and tests`：在 `macos-15` 上运行 `swift test` 和 `swift build -c release --product FSMonitor`。
 
-这个工作流已经放进仓库，但本次开发没有 macOS 运行器，所以不能把 macOS 作业说成已经通过。只有 GitHub 上该作业实际结束后，才能采用它的结果。
+GitHub 已于 2026-11-02 停用 `macos-14` 运行器镜像。使用该标签时，作业会在启动前被取消，注释为 `The configuration 'macos-14-arm64-us-xl' is not supported`。因此这里改用仍在提供的标准标签 `macos-15`，而不是更大的 `macos-15-xlarge`。应用的最低部署目标仍是 macOS 13。只有这个作业在 GitHub 上实际结束后，才能把它的结果当作 macOS 构建结果。
 
 ## 源码结构
 
