@@ -315,16 +315,9 @@ private struct POSIXStatus {
     var inode: UInt64
 
     static func read(path: String) -> POSIXStatus? {
-        #if os(macOS)
-        return path.withFileSystemRepresentation { pointer in
-            guard let pointer else { return nil }
-            return status(at: pointer)
-        }
-        #else
-        return path.withCString { pointer in
+        path.withCString { pointer in
             status(at: pointer)
         }
-        #endif
     }
 
     private static func status(at pointer: UnsafePointer<CChar>) -> POSIXStatus? {
