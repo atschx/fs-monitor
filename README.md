@@ -1,31 +1,31 @@
 # fs-monitor
 
-macOS 目录增长说明工具（**测试预发布**）。
+macOS 目录增长说明工具（**测试预发布准备中**）。
 
 选定目录 → 建立空间基线 →（可选）监控 FSEvents → 再次扫描对照差异。五个结果页：子项增长、文件差异、操作证据、进程读写、限制与错误。进程读写只是同时段全进程旁证，**不是**目录级归因，也**不能**做程序—文件精确归因或 100% 物理 IO 归因。
 
 退出应用后**不保留**监控会话、证据或扫描结果。
 
-## 下载（当前测试预发布）
+## 下载
 
-- **预发布：** [v0.1.1-beta.1](https://github.com/atschx/fs-monitor/releases/tag/v0.1.1-beta.1)（以该 Release 页实际附件与 SHA-256 为准）
+- **状态：发布准备中。** 目标预发布标识为 `v0.1.1-beta.1`（包内营销版本 `0.1.1`）。该 tag / Release **尚未创建**前，请勿把尚不存在的 tag 链接当作已可下载入口。
+- 已有发行物一览：[Releases](https://github.com/atschx/fs-monitor/releases)（以页面实际内容为准）
 - 介绍与指南：https://blog.atschx.me/fs-monitor/
-- 早期测试标识 [v0.1.0-test](https://github.com/atschx/fs-monitor/releases/tag/v0.1.0-test) **仍然保留**，不是本版本，也不被覆盖
+- 早期测试标识 [v0.1.0-test](https://github.com/atschx/fs-monitor/releases/tag/v0.1.0-test) **仍然保留**，不是本目标版本，也不被覆盖
 
-### 本版绑定与包事实
+### 目标包事实（发布完成后以 Release 附件为准）
 
 | 项 | 值 |
 | --- | --- |
-| Tag | `v0.1.1-beta.1`（prerelease） |
+| 目标 Tag | `v0.1.1-beta.1`（prerelease；**创建前不可当作已发布**） |
 | 包内营销版本 | `0.1.1` |
-| 绑定提交（最终 main） | `7c35ba19e18b5ba3fbc9978e402b9e15114f653a`（合并 PR #4；含产品 UI head `2eb9f677…`） |
+| 绑定提交 | **待最终发布记录核实**（以 Release 的 tag 指向与旁路 `BUILD_INFO.txt` 的 `git_sha` 为准；勿与文档提交或合并提交混用） |
+| 构建号 / zip SHA-256 | **待最终发布记录核实**（见 Release 附件 `BUILD_INFO.txt` / `FSMonitor.app.sha256`） |
 | 架构 | **仅 Apple Silicon（arm64）** |
 | 最低系统目标 | macOS **13.0**（目标兼容；**不代表已在 macOS 13 完成交互验收**） |
 | 签名 / 公证 | **ad-hoc**，无 Developer ID，**未公证**；Gatekeeper/`spctl` 拒绝为预期 |
-| GUI / 同包实机交互 | **未验收**（负责人已跳过人工验证环节；**不得视为通过**） |
-| Liquid Glass | **未实现、未验证**；需求仍开放。当前构建工具链为 Xcode 16.x / macOS 15 SDK，不具备官方所述最新 SDK + 对应系统运行条件 |
-
-构建号与 zip SHA-256 以 Release 附件中的 `BUILD_INFO.txt` / `FSMonitor.app.sha256` 为准（由发布工作流写入，勿与 PR 预览 CI 包混淆）。
+| 同包实机交互 | **未验收**（不得视为通过） |
+| Liquid Glass | **本版本未提供**该系统外观能力（构建所用 SDK 也不具备官方所述最新材料条件） |
 
 首次打开（说明供参考，**不保证**各系统/策略下表现一致）：
 
@@ -48,8 +48,8 @@ macOS 目录增长说明工具（**测试预发布**）。
 
 - FSEvents **无 PID**；全进程计数 ≠ 目标目录 I/O；时间接近 ≠ 因果
 - 不能还原监控开始前的历史；不能许诺退出或重启后回看会话
-- 不是现状：跨会话持久化、整盘 IO 仪表盘、已公证正式版、已验收 Liquid Glass 外观
-- **本预发布不是全量产品验收通过**
+- 不是现状：跨会话持久化、整盘 IO 仪表盘、已公证正式版、Liquid Glass 外观
+- **不是全量产品验收通过**
 - 仅 macOS；仓库 CI 不再跑 Linux 测试
 
 ## 源码构建（开发者）

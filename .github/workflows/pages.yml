@@ -45,12 +45,17 @@ jobs:
           assert "FSEvents" in html
           assert "100% 物理 IO" in html
           assert "v0.1.1-beta.1" in html
+          assert "发布准备中" in html
+          assert "Releases" in html
           assert "未公证" in html
           assert "Liquid Glass" in html
           assert "未验收" in html
+          assert "负责人已跳过" not in html
+          assert "需求仍开放" not in html
           assert re.search(r"sqlite|fs_usage", html, re.I) is None
           assert "建立基线" in guide
           assert "Gatekeeper" in guide
+          assert "负责人已跳过" not in guide
           assert "--sea:" in css
           print("static checks ok")
           PY

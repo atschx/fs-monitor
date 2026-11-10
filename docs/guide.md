@@ -1,20 +1,20 @@
 # FSMonitor 使用指南
 
-适用对象：已安装或已构建的 **macOS** FSMonitor **测试预发布**。本文只描述当前界面里真实存在的流程。
+适用对象：已安装或已构建的 **macOS** FSMonitor。本文只描述当前界面里真实存在的流程。
 
 相关入口：
 
 - 仓库说明：[README.md](../README.md)
 - 介绍页：https://blog.atschx.me/fs-monitor/
-- 当前预发布：[v0.1.1-beta.1](https://github.com/atschx/fs-monitor/releases/tag/v0.1.1-beta.1)（包内 0.1.1；早期 [v0.1.0-test](https://github.com/atschx/fs-monitor/releases/tag/v0.1.0-test) 仍保留）
+- 目标预发布标识：`v0.1.1-beta.1`（包内 0.1.1）。**发布准备中**时请看 [Releases](https://github.com/atschx/fs-monitor/releases) 实际列表；早期 [v0.1.0-test](https://github.com/atschx/fs-monitor/releases/tag/v0.1.0-test) 仍保留
 
 ## 1. 准备
 
 - 系统目标：macOS 13+；当前公开测试包架构为 **仅 Apple Silicon（arm64）**
-- 来源：优先 GitHub Release **v0.1.1-beta.1** 中的 `FSMonitor.app.zip`（核对该页 SHA-256）；或本机（arm64 Mac）`scripts/package-macos-app.sh`
+- 来源：目标预发布创建后，从其 Release 下载 `FSMonitor.app.zip` 并核对该页 SHA-256；或本机（arm64 Mac）`scripts/package-macos-app.sh`
 - 测试包为 **ad-hoc 签名**，**未公证**；`spctl --assess` 为 rejected（预期）
-- **同一包在真实 Mac 上的 GUI / 交互尚未验收**（负责人已跳过人工验证；不得视为通过）。请区分「CI/发布打包」与「实机验收」
-- **Liquid Glass 未实现、未验证**；需求仍开放
+- **同一包在真实 Mac 上的交互尚未验收**。请区分「CI/发布打包」与「实机验收」
+- **Liquid Glass 未提供**
 - 首次打开说明不保证各系统/策略下表现一致：选中 App → 右键「打开」。不要关闭 Gatekeeper 或 SIP
 - 图标：Nova 选定 D2。已知 16/32 眼神弱、大尺寸偏前；未 Dock 实测。设计稿不是运行截图
 - 退出应用后不保留监控会话、证据或扫描结果
