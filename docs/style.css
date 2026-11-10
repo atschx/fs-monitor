@@ -287,6 +287,76 @@ dd code,
   font-size: 0.98rem;
 }
 
+.team-grid {
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 560px) {
+  .team-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 900px) {
+  .team-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.team-card {
+  display: flex;
+  gap: 0.9rem;
+  align-items: flex-start;
+  margin: 0;
+  padding: 0.95rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 0.75rem;
+  background: color-mix(in srgb, var(--foam) 72%, transparent);
+}
+
+.team-avatar {
+  flex: 0 0 auto;
+  width: 4.25rem;
+  height: 4.25rem;
+  border-radius: 999px;
+  object-fit: cover;
+  object-position: center;
+  background: #0a0a0a;
+  border: 1px solid var(--line);
+}
+
+.team-meta {
+  min-width: 0;
+}
+
+.team-name {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+}
+
+.team-role {
+  margin: 0.15rem 0 0.4rem;
+  color: var(--sea-deep);
+  font-size: 0.92rem;
+  font-weight: 600;
+}
+
+.team-contrib {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
 footer {
   padding: 1.5rem 0 3rem;
   border-top: 1px solid var(--line);
@@ -322,6 +392,38 @@ footer a:focus-visible {
 
   .cta {
     width: 100%;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #e8f1f6;
+    --ink-soft: #b4c5d1;
+    --foam: #102231;
+    --sea: #4eb3cf;
+    --sea-deep: #8ad0e4;
+    --signal: #7ec8dc;
+    --line: rgba(232, 241, 246, 0.16);
+    --glow: rgba(78, 179, 207, 0.2);
+    --shadow: rgba(0, 0, 0, 0.35);
+  }
+
+  body {
+    background:
+      radial-gradient(1000px 520px at 8% -8%, rgba(78, 179, 207, 0.16), transparent 55%),
+      radial-gradient(780px 420px at 100% 0%, rgba(14, 60, 78, 0.35), transparent 48%),
+      linear-gradient(180deg, #08141d 0%, #0c1a26 55%, #102231 100%);
+  }
+
+  .team-card {
+    background: color-mix(in srgb, #132636 85%, transparent);
+  }
+
+  p code,
+  li code,
+  dd code,
+  .foot-note code {
+    background: rgba(232, 241, 246, 0.08);
   }
 }
 
