@@ -14,7 +14,10 @@ public enum ScanCoverage: Sendable {
         for issue in issues {
             let issuePath = normalize(issue.path)
             let message = issue.message
-            if isUnreadStatus(message) && pathsEqual(issuePath, path) {
+            // Status read failure on a path also means nothing under it was observed
+            // (directory lstat fail never descends). Exact-only matching would still
+            // mark baseline descendants as confident deletes.
+            if isUnreadStatus(message) && covers(issuePath, descendantOrSelf: path) {
                 return true
             }
             if isDirectoryListFailure(message) && covers(issuePath, descendantOrSelf: path) {

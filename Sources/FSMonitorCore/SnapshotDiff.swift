@@ -115,10 +115,11 @@ public struct SnapshotDiff: Equatable, Sendable {
         changes.sort { $0.relativePath < $1.relativePath }
 
         // Totals omit uncovered paths; undo those false shrinks/grows so aggregate
-        // deltas only reflect confidently observed entries.
+        // deltas only reflect confidently observed entries. Only paths that counted
+        // toward totals are compensated — hard-link aliases must not be added back.
         var logicalDelta = current.totalLogicalBytes - baseline.totalLogicalBytes
         var allocatedDelta = current.totalAllocatedBytes - baseline.totalAllocatedBytes
-        for change in changes where change.change == .coverageGap {
+        for change in changes where change.change == .coverageGap && change.countsTowardTotal {
             if change.baselineLogical > 0, change.currentLogical == 0 {
                 logicalDelta += change.baselineLogical
                 if let allocated = change.baselineAllocated {

@@ -183,6 +183,117 @@ final class CoverageGapDiffTests: XCTestCase {
         XCTAssertEqual(current.totalLogicalBytes, Int64(visibleSize))
     }
 
+    func testDirectoryStatusFailureCoversBaselineDescendants() {
+        let nested = entry("secret/nested/deep.txt", size: 90)
+        let keep = entry("keep.txt", size: 10)
+        let baseline = snapshot(
+            entries: [nested, keep, directory("secret"), directory("secret/nested")],
+            total: 100,
+            issues: []
+        )
+        // Directory itself never entered entries (lstat failed); only the issue path remains.
+        let current = snapshot(
+            entries: [keep],
+            total: 10,
+            issues: [ScanIssue(path: "secret", message: "无法读取文件状态。")]
+        )
+
+        let diff = SnapshotDiff.compare(baseline: baseline, current: current)
+        let byPath = Dictionary(uniqueKeysWithValues: diff.changes.map { ($0.relativePath, $0) })
+
+        XCTAssertEqual(byPath["secret"]?.change, .coverageGap)
+        XCTAssertEqual(byPath["secret/nested"]?.change, .coverageGap)
+        XCTAssertEqual(byPath["secret/nested/deep.txt"]?.change, .coverageGap)
+        XCTAssertEqual(diff.removedCount, 0)
+        XCTAssertEqual(diff.logicalDelta, 0)
+        XCTAssertFalse(ScanCoverage.preventsConfidentAbsence(of: "keep.txt", issues: current.issues))
+    }
+
+    func testHardLinkAliasCoverageGapDoesNotDoubleCountAggregate() {
+        let primary = entry("data/original.txt", size: 100)
+        let alias = DirectoryEntry(
+            relativePath: "data/alias.txt",
+            kind: .regularFile,
+            logicalSize: 100,
+            allocatedSize: 100,
+            modifiedAt: nil,
+            device: 1,
+            inode: primary.inode,
+            countsTowardTotal: false,
+            hardLinkNote: "与 data/original.txt 为同一 inode，合计只计一次。"
+        )
+        let keep = entry("keep.txt", size: 7)
+        // Totals include primary once only (100 + 7).
+        let baseline = snapshot(
+            entries: [primary, alias, keep, directory("data")],
+            total: 107,
+            issues: []
+        )
+        let current = snapshot(
+            entries: [keep, directory("data")],
+            total: 7,
+            issues: [ScanIssue(path: "data", message: "无法列出目录：Permission denied")]
+        )
+
+        let diff = SnapshotDiff.compare(baseline: baseline, current: current)
+        let byPath = Dictionary(uniqueKeysWithValues: diff.changes.map { ($0.relativePath, $0) })
+
+        XCTAssertEqual(byPath["data/original.txt"]?.change, .coverageGap)
+        XCTAssertEqual(byPath["data/alias.txt"]?.change, .coverageGap)
+        XCTAssertEqual(byPath["data/alias.txt"]?.countsTowardTotal, false)
+        // Naive totals drop 100; compensating both primary and alias would invent +100 growth.
+        XCTAssertEqual(diff.logicalDelta, 0)
+        XCTAssertEqual(diff.allocatedDelta, 0)
+    }
+
+    func testSecretPrefixDoesNotCoverSecret2SiblingTree() {
+        let underSecret = entry("secret/hidden.txt", size: 40)
+        let underSecret2 = entry("secret2/visible.txt", size: 55)
+        let keep = entry("keep.txt", size: 3)
+        let baseline = snapshot(
+            entries: [
+                underSecret,
+                underSecret2,
+                keep,
+                directory("secret"),
+                directory("secret2")
+            ],
+            total: 98,
+            issues: []
+        )
+        let current = snapshot(
+            entries: [underSecret2, keep, directory("secret"), directory("secret2")],
+            total: 58,
+            issues: [ScanIssue(path: "secret", message: "无法列出目录：Permission denied")]
+        )
+
+        XCTAssertTrue(ScanCoverage.preventsConfidentAbsence(of: "secret/hidden.txt", issues: current.issues))
+        XCTAssertFalse(ScanCoverage.preventsConfidentAbsence(of: "secret2", issues: current.issues))
+        XCTAssertFalse(ScanCoverage.preventsConfidentAbsence(of: "secret2/visible.txt", issues: current.issues))
+
+        let diff = SnapshotDiff.compare(baseline: baseline, current: current)
+        let byPath = Dictionary(uniqueKeysWithValues: diff.changes.map { ($0.relativePath, $0) })
+
+        XCTAssertEqual(byPath["secret/hidden.txt"]?.change, .coverageGap)
+        XCTAssertEqual(byPath["secret2/visible.txt"]?.change, .unchanged)
+        // secret2 tree stayed readable; deleting underSecret alone would shrink by 40 with gap undo → 0.
+        XCTAssertEqual(diff.removedCount, 0)
+        XCTAssertEqual(diff.logicalDelta, 0)
+
+        // True delete under secret2 must remain when there is no issue covering it.
+        let deletedSecret2 = snapshot(
+            entries: [keep, directory("secret"), directory("secret2")],
+            total: 3,
+            issues: [ScanIssue(path: "secret", message: "无法列出目录：Permission denied")]
+        )
+        let deleteDiff = SnapshotDiff.compare(baseline: baseline, current: deletedSecret2)
+        let deleteByPath = Dictionary(uniqueKeysWithValues: deleteDiff.changes.map { ($0.relativePath, $0) })
+        XCTAssertEqual(deleteByPath["secret/hidden.txt"]?.change, .coverageGap)
+        XCTAssertEqual(deleteByPath["secret2/visible.txt"]?.change, .removed)
+        XCTAssertEqual(deleteDiff.removedCount, 1)
+        XCTAssertEqual(deleteDiff.logicalDelta, -55)
+    }
+
     private func entry(_ path: String, size: Int64) -> DirectoryEntry {
         DirectoryEntry(
             relativePath: path,
