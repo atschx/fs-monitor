@@ -1,6 +1,13 @@
 # fs-monitor
 
-macOS 目录增长说明工具。它在你选定的目录上建立空间基线，记录监控窗口里的文件系统事件，并在再次扫描后对照差异。进程读写只在系统真实返回时展示，用来提供旁证，而不是把写入归因到这个目录。
+macOS 目录增长说明工具（早期 demo，仍在迭代）。它在你选定的目录上建立空间基线，记录监控窗口里的文件系统事件，并在再次扫描后对照差异。进程读写只在系统真实返回时展示，用来提供旁证，而不是把写入归因到这个目录。
+
+项目介绍页（GitHub Pages）：
+
+- https://atschx.github.io/fs-monitor/
+- 若账号已配置自定义域，上述地址可能转到 https://blog.atschx.me/fs-monitor/
+
+仓库根目录的 `docs/` 与 `.github/workflows/pages.yml` 用于上述介绍页。本仓库当前没有 GitHub Releases 安装包。
 
 ## 它说明什么
 
@@ -109,3 +116,4 @@ GitHub 已于 2026-11-02 停用 `macos-14` 运行器镜像。使用该标签时�
 - `Sources/FSMonitorProc`：macOS 上调用 `proc_pid_rusage`、`proc_listallpids` 和 `proc_pidpath`。其他系统的同名函数直接失败，不制造计数。
 - `Sources/FSMonitor`：SwiftUI 界面、目录选择、FSEvents 和进程采样。只在 macOS 上编译进应用。
 - `Tests/FSMonitorCoreTests`：核心测试。Mac 上还有一组 SDK 标志对照测试。
+- `docs/`：公开介绍页静态文件，由 GitHub Pages 工作流发布。
