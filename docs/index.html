@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="fs-monitor：macOS 目录增长说明工具测试预发布。建立空间基线，记录 FSEvents，再扫描差分；不能做精确归因。">
+  <meta name="description" content="fs-monitor：macOS 目录增长说明工具。建立空间基线，记录 FSEvents，再扫描差分；不能做精确归因。">
   <title>fs-monitor · macOS 目录增长说明</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,16 +17,16 @@
     <p class="brand">fs-monitor</p>
     <h1>把目录变大这件事说清楚，而不是假装找到了凶手。</h1>
     <p class="lede">
-      macOS 测试预发布 <strong>v0.1.1-beta.1</strong>（包内 0.1.1）：对选定目录建立空间基线，可选监控 FSEvents，再次扫描后对照差异。
+      macOS 目录增长说明工具。目标测试预发布标识 <strong>v0.1.1-beta.1</strong>（包内 0.1.1）：对选定目录建立空间基线，可选监控 FSEvents，再次扫描后对照差异。
       进程读写只在系统真实返回时展示，用作旁证，不是目录级归因，也不能做程序—文件精确归因或 100% 物理 IO 归因。
       退出后不保留会话。
     </p>
     <div class="cta-row">
-      <a class="cta primary" href="https://github.com/atschx/fs-monitor/releases/tag/v0.1.1-beta.1">下载 v0.1.1-beta.1</a>
+      <a class="cta primary" href="https://github.com/atschx/fs-monitor/releases">查看 Releases（发布准备中）</a>
       <a class="cta secondary" href="guide.html">使用指南</a>
       <a class="cta secondary" href="https://github.com/atschx/fs-monitor">源码</a>
     </div>
-    <p class="status-chip">测试预发布 · 仅 Apple Silicon (arm64) · ad-hoc 未公证 · GUI/同包实机交互未验收 · Liquid Glass 未实现未验证 · 非全量验收通过</p>
+    <p class="status-chip">发布准备中 · 目标 v0.1.1-beta.1 · 仅 Apple Silicon (arm64) · ad-hoc 未公证 · 同包实机交互未验收 · Liquid Glass 未提供 · 非全量验收通过</p>
   </header>
 
   <main>
@@ -48,19 +48,19 @@
         <li>不能指出是哪个进程写入了该目录；全进程计数不是目标目录 I/O。</li>
         <li>时间接近不是因果；不能做 100% 物理 IO 归因。</li>
         <li>不能还原监控开始前的历史；退出后不保存会话、证据或扫描结果。</li>
-        <li>不是现状：持久化回溯、整盘 IO 仪表盘、正式公证签名版、已验收的 Liquid Glass 外观。</li>
+        <li>不是现状：持久化回溯、整盘 IO 仪表盘、正式公证签名版、Liquid Glass 外观。</li>
       </ul>
     </section>
 
     <section aria-labelledby="get-title">
       <h2 id="get-title">如何获取</h2>
-      <p class="section-lede">下载可双击的 <code>FSMonitor.app</code>；以本预发布 Release 为准，不要用设计图或 PR Actions 预览包冒充。</p>
+      <p class="section-lede">目标预发布创建前标为<strong>发布准备中</strong>；不要把尚不存在的 tag 当作已可下载入口，也不要用设计图或 PR Actions 预览包冒充。</p>
       <ul class="plain-list">
-        <li><a href="https://github.com/atschx/fs-monitor/releases/tag/v0.1.1-beta.1">GitHub Release v0.1.1-beta.1</a>：下载 <code>FSMonitor.app.zip</code>，并核对该页公布的 SHA-256 / <code>BUILD_INFO.txt</code>。</li>
-        <li>绑定提交（最终 main）：<code>7c35ba19e18b5ba3fbc9978e402b9e15114f653a</code>（合并 PR #4）。早期 <a href="https://github.com/atschx/fs-monitor/releases/tag/v0.1.0-test">v0.1.0-test</a> 仍保留。</li>
+        <li><a href="https://github.com/atschx/fs-monitor/releases">GitHub Releases</a>：以页面实际内容为准。目标标识 <code>v0.1.1-beta.1</code> 创建后，再从该 Release 下载 <code>FSMonitor.app.zip</code> 并核对其公布的 SHA-256 / <code>BUILD_INFO.txt</code>。</li>
+        <li>绑定提交、构建号与 zip 哈希：<strong>待最终发布记录核实</strong>（以 tag 指向与旁路 <code>BUILD_INFO</code> 为准）。早期 <a href="https://github.com/atschx/fs-monitor/releases/tag/v0.1.0-test">v0.1.0-test</a> 仍保留。</li>
         <li>目标：macOS 13+，<strong>仅 arm64</strong>。最低系统目标 ≠ 已在 macOS 13 完成交互验收。</li>
         <li>签名：ad-hoc；未公证；Gatekeeper/<code>spctl</code> 评估拒绝（预期）。首次打开不要关闭系统保护。</li>
-        <li>GUI / 同包实机交互<strong>未验收</strong>（负责人已跳过人工验证；不得写成通过）。Liquid Glass <strong>未实现、未验证</strong>，需求仍开放。</li>
+        <li>同包实机交互<strong>未验收</strong>。Liquid Glass <strong>未提供</strong>。</li>
         <li>图标为 D2 主题接入；设计稿不是本包运行截图。</li>
       </ul>
       <p class="note">更多步骤见 <a href="guide.html">使用指南</a>。</p>
