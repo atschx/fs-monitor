@@ -74,7 +74,7 @@ final class CoverageGapDiffTests: XCTestCase {
         let byPath = Dictionary(uniqueKeysWithValues: diff.changes.map { ($0.relativePath, $0) })
 
         XCTAssertEqual(byPath["blocked.bin"]?.change, .coverageGap)
-        XCTAssertNil(byPath["keep.txt"])
+        XCTAssertEqual(byPath["keep.txt"]?.change, .unchanged)
         XCTAssertEqual(diff.removedCount, 0)
         XCTAssertEqual(diff.logicalDelta, 0)
     }
