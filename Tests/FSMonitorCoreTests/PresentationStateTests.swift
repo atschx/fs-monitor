@@ -283,7 +283,7 @@ final class PresentationStateTests: XCTestCase {
         XCTAssertTrue(
             SessionPresentation.usesPartialCoverageSummaryLabels(diff: gapDiff, scanIssues: [])
         )
-        XCTAssertEqual(EntryChangeKind.coverageGap.label, "覆盖缺口（未知，不可判断）")
+        XCTAssertEqual(ChangeKind.coverageGap.label, "覆盖缺口（未知，不可判断）")
     }
 
     func testCancelOrFailKeepsOldResultsAndDoesNotStopMonitoringFlag() {
