@@ -86,24 +86,31 @@ final class PresentationStateTests: XCTestCase {
         session.markMonitoringStoppedAwaitingSample()
         XCTAssertFalse(session.isMonitoring)
         XCTAssertTrue(session.isScanning)
-        XCTAssertTrue(session.statusMessage?.contains("已停止监控") == true)
-        XCTAssertTrue(session.statusMessage?.contains("扫描仍在继续") == true)
+        XCTAssertTrue(session.statusMessage?.hasPrefix("已停止监控") == true)
+        XCTAssertFalse(session.statusMessage?.contains("扫描仍在继续") == true)
 
         // During sample transition, dual-task uses sampling label — not static "已停止".
         var dual = SessionPresentation.dualTaskStatus(for: session)
         XCTAssertEqual(dual.monitoringLine, "监控：采样过渡中")
         XCTAssertEqual(SessionPresentation.primaryAction(for: session), .none)
+        XCTAssertTrue(dual.combinedSummary.contains("扫描：复扫中") || dual.scanningLine?.contains("复扫") == true)
 
         session.stopMonitoring(processSample: sample([], at: 2))
         XCTAssertTrue(session.isScanning)
-        XCTAssertTrue(session.statusMessage?.contains("已停止监控") == true)
-        XCTAssertTrue(session.statusMessage?.contains("扫描仍在继续") == true)
+        XCTAssertTrue(session.statusMessage?.hasPrefix("已停止监控") == true)
+        XCTAssertFalse(session.statusMessage?.contains("扫描仍在继续") == true)
 
-        // After stop settles, static dual-task must say 未运行 (may never have been started either).
+        // After stop settles, static dual-task must say 未运行; scan-continue lives on live dual/scan strip.
         dual = SessionPresentation.dualTaskStatus(for: session)
         XCTAssertEqual(dual.monitoringLine, "监控：未运行")
         XCTAssertTrue(dual.combinedSummary.contains("监控未运行，扫描仍在进行"))
         XCTAssertFalse(dual.combinedSummary.contains("监控：已停止"))
+
+        // After scan finishes, statusMessage must not still claim scanning continues.
+        XCTAssertTrue(session.finishScan(emptySnapshot(completed: true, capturedAt: fixedDate(3)), purpose: .rescan).accepted)
+        XCTAssertFalse(session.isScanning)
+        XCTAssertFalse(session.statusMessage?.contains("扫描仍在继续") == true)
+        XCTAssertEqual(SessionPresentation.dualTaskStatus(for: session).monitoringLine, "监控：未运行")
     }
 
     func testBaselineWithoutEverMonitoringUsesNotRunningNotStopped() {
@@ -116,11 +123,48 @@ final class PresentationStateTests: XCTestCase {
         let idle = SessionPresentation.dualTaskStatus(for: session)
         XCTAssertEqual(idle.monitoringLine, "监控：未运行")
         XCTAssertFalse(idle.combinedSummary.contains("已停止"))
+        // F7 idle with valid baseline must keep dual-task chrome visible (not scan-only).
+        XCTAssertTrue(SessionPresentation.shouldShowDualTaskChrome(for: session))
 
         XCTAssertTrue(session.prepareScan(.rescan).accepted)
         let scanning = SessionPresentation.dualTaskStatus(for: session)
         XCTAssertEqual(scanning.monitoringLine, "监控：未运行")
         XCTAssertTrue(scanning.combinedSummary.contains("监控未运行，扫描仍在进行"))
+    }
+
+    func testStopFeedbackNeverEmbedsScanContinuesInStatusMessage() {
+        var session = MonitorSession()
+        _ = session.selectDirectory(path: "/tmp/example")
+        _ = session.prepareScan(.baseline)
+        XCTAssertTrue(session.finishScan(emptySnapshot(completed: true), purpose: .baseline).accepted)
+        session.beginMonitoring(processSample: sample([], at: 1))
+        XCTAssertTrue(session.prepareScan(.rescan).accepted)
+
+        session.markMonitoringStoppedAwaitingSample()
+        XCTAssertEqual(session.statusMessage?.hasPrefix("已停止监控"), true)
+        XCTAssertFalse(session.statusMessage?.contains("扫描仍在继续") == true)
+
+        session.stopMonitoring(processSample: sample([], at: 2))
+        XCTAssertEqual(session.statusMessage?.hasPrefix("已停止监控"), true)
+        XCTAssertFalse(session.statusMessage?.contains("扫描仍在继续") == true)
+        // Live dual-task still reports scan in progress independently of statusMessage.
+        let dual = SessionPresentation.dualTaskStatus(for: session)
+        XCTAssertTrue(session.isScanning)
+        XCTAssertTrue(dual.combinedSummary.contains("扫描"))
+    }
+
+    func testDualTaskChromeVisibleForIdleBaselineAndHiddenBeforeBaselineIdle() {
+        var session = MonitorSession()
+        XCTAssertFalse(SessionPresentation.shouldShowDualTaskChrome(for: session))
+
+        _ = session.selectDirectory(path: "/tmp/example")
+        XCTAssertFalse(SessionPresentation.shouldShowDualTaskChrome(for: session))
+
+        _ = session.prepareScan(.baseline)
+        XCTAssertTrue(SessionPresentation.shouldShowDualTaskChrome(for: session))
+        XCTAssertTrue(session.finishScan(emptySnapshot(completed: true), purpose: .baseline).accepted)
+        XCTAssertTrue(SessionPresentation.shouldShowDualTaskChrome(for: session))
+        XCTAssertEqual(SessionPresentation.dualTaskStatus(for: session).monitoringLine, "监控：未运行")
     }
 
     func testCancelOrFailDoesNotAdoptIncompleteOrFakeSuccessTime() {

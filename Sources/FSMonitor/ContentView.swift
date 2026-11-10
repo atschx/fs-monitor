@@ -5,6 +5,7 @@ import FSMonitorCore
 
 struct ContentView: View {
     @EnvironmentObject private var controller: MonitorController
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var panel: ResultPanel = .rollup
     @State private var confirmReplace = false
     @State private var pendingURL: URL?
@@ -113,18 +114,27 @@ struct ContentView: View {
     @ViewBuilder
     private var dualTaskBadge: some View {
         let dual = SessionPresentation.dualTaskStatus(for: session)
-        if session.isProcessSamplePending {
-            Label(dual.combinedSummary, systemImage: "clock")
-                .font(.caption)
-                .foregroundStyle(.orange)
-                .lineLimit(2)
-                .help(dual.combinedSummary)
-        } else if session.isMonitoring || session.isScanning {
-            Label(dual.combinedSummary, systemImage: session.isMonitoring ? "circle.fill" : "doc.text.magnifyingglass")
-                .font(.caption)
-                .foregroundStyle(session.isMonitoring ? Color.green : Color.secondary)
-                .lineLimit(2)
-                .help(dual.combinedSummary)
+        if SessionPresentation.shouldShowDualTaskChrome(for: session) {
+            if session.isProcessSamplePending {
+                Label(dual.combinedSummary, systemImage: "clock")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+                    .lineLimit(2)
+                    .help(dual.combinedSummary)
+            } else if session.isMonitoring {
+                Label(dual.combinedSummary, systemImage: "circle.fill")
+                    .font(.caption)
+                    .foregroundStyle(Color.green)
+                    .lineLimit(2)
+                    .help(dual.combinedSummary)
+            } else {
+                // F7 idle / never-started with valid baseline: stable 「监控：未运行」.
+                Label(dual.combinedSummary, systemImage: session.isScanning ? "doc.text.magnifyingglass" : "pause.circle")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+                    .help(dual.combinedSummary)
+            }
         }
     }
 
@@ -141,7 +151,7 @@ struct ContentView: View {
     @ViewBuilder
     private var statusBanners: some View {
         let dual = SessionPresentation.dualTaskStatus(for: session)
-        if session.isScanning || session.isMonitoring || session.isProcessSamplePending {
+        if SessionPresentation.shouldShowDualTaskChrome(for: session) {
             Text(dual.combinedSummary)
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -150,10 +160,14 @@ struct ContentView: View {
                 .padding(.top, FSTheme.spacing8)
                 .accessibilityLabel(dual.combinedSummary)
         }
+        // Live scan strip only while isScanning — activity indicator follows real scan, not statusMessage.
         if session.isScanning {
             VStack(alignment: .leading, spacing: 4) {
-                Text(dual.scanningLine ?? "扫描：进行中")
-                    .font(.headline)
+                HStack(spacing: FSTheme.spacing8) {
+                    ScanActivityIndicator(reduceMotion: reduceMotion, controlSize: .small)
+                    Text(dual.scanningLine ?? "扫描：进行中")
+                        .font(.headline)
+                }
                 Text("已访问 \(session.progress?.visited ?? 0) 项（无虚构百分比或剩余时间）")
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -236,7 +250,7 @@ struct ContentView: View {
 
     private var scanningState: some View {
         VStack(spacing: FSTheme.spacing12) {
-            ProgressView()
+            ScanActivityIndicator(reduceMotion: reduceMotion, controlSize: .regular)
             Text("正在建立基线…")
                 .font(.headline)
             Text("已访问 \(session.progress?.visited ?? 0) 项（无虚构百分比或剩余时间）")
@@ -260,8 +274,7 @@ struct ContentView: View {
             summary
             if session.isScanning {
                 HStack(spacing: FSTheme.spacing8) {
-                    ProgressView()
-                        .controlSize(.small)
+                    ScanActivityIndicator(reduceMotion: reduceMotion, controlSize: .small)
                     Text("正在扫描，已访问 \(session.progress?.visited ?? 0) 项")
                         .font(.caption)
                         .foregroundStyle(.secondary)
@@ -709,6 +722,26 @@ private struct EmphasisButton: ViewModifier {
         } else {
             content
                 .buttonStyle(.bordered)
+        }
+    }
+}
+
+/// v2.3 scan activity: system ProgressView while scanning; reduce-motion uses a static symbol (no spin/blink).
+private struct ScanActivityIndicator: View {
+    var reduceMotion: Bool
+    var controlSize: ControlSize
+
+    var body: some View {
+        Group {
+            if reduceMotion {
+                Image(systemName: "ellipsis.circle")
+                    .foregroundStyle(.secondary)
+                    .accessibilityLabel("扫描进行中")
+            } else {
+                ProgressView()
+                    .controlSize(controlSize)
+                    .accessibilityLabel("扫描进行中")
+            }
         }
     }
 }

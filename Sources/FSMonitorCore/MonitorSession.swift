@@ -294,11 +294,8 @@ public struct MonitorSession: Equatable, Sendable {
         isMonitoring = false
         isProcessSamplePending = true
         correlation = nil
-        if isScanning {
-            statusMessage = "已停止监控，扫描仍在继续；正在采样全进程计数，可单独取消扫描。此前的进程差值已收起。"
-        } else {
-            statusMessage = "已停止监控，正在采样全进程计数。此前的进程差值已收起，避免与未完成的新采样混淆。"
-        }
+        // Stop feedback is only "已停止监控". Whether a scan continues comes from live scan chrome.
+        statusMessage = "已停止监控。正在采样全进程计数。此前的进程差值已收起，避免与未完成的新采样混淆。"
     }
 
     public mutating func stopMonitoring(processSample: ProcessIOSnapshot) {
@@ -311,11 +308,8 @@ public struct MonitorSession: Equatable, Sendable {
             correlation = nil
         }
         needsProcessWindowReset = false
-        if isScanning {
-            statusMessage = "已停止监控，扫描仍在继续。若能看到进程差值，那也是全进程计数，不是目标目录的 I/O。"
-        } else {
-            statusMessage = "已停止监控。若能看到进程差值，那也是全进程计数，不是目标目录的 I/O。"
-        }
+        // Do not embed "扫描仍在继续" here — that would linger after the scan ends.
+        statusMessage = "已停止监控。若能看到进程差值，那也是全进程计数，不是目标目录的 I/O。"
         if let listError = processSample.listError {
             statusMessage = (statusMessage ?? "") + listError
         }

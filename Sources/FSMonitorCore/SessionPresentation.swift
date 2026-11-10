@@ -70,6 +70,15 @@ public enum SessionPresentation {
         return .rescan
     }
 
+    /// After a valid baseline, idle F7 must still show dual-task chrome (监控：未运行).
+    /// Before baseline, chrome appears only for in-flight scan/sample work.
+    public static func shouldShowDualTaskChrome(for session: MonitorSession) -> Bool {
+        if session.baseline != nil {
+            return true
+        }
+        return session.isScanning || session.isProcessSamplePending || session.isMonitoring
+    }
+
     public static func dualTaskStatus(for session: MonitorSession) -> DualTaskStatus {
         let monitoring: String?
         if session.isMonitoring {
