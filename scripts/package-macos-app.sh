@@ -71,38 +71,51 @@ APP_ROOT="$OUTPUT_DIR/$APP_NAME.app"
 rm -rf "$APP_ROOT" "$OUTPUT_DIR/${APP_NAME}.app.zip" "$OUTPUT_DIR/${APP_NAME}.app.sha256"
 mkdir -p "$APP_ROOT/Contents/MacOS" "$APP_ROOT/Contents/Resources"
 
-ICONSET="$ROOT/Resources/AppIcon.iconset"
+D2_DIR="$ROOT/Assets/icons/D2"
+ICONSET="$OUTPUT_DIR/AppIcon.iconset"
 ICNS_OUT="$OUTPUT_DIR/AppIcon.icns"
-if [[ ! -d "$ICONSET" ]]; then
-  echo "Missing $ICONSET (D2 iconset)." >&2
-  exit 1
-fi
-echo "==> Build AppIcon.icns from verified D2 iconset"
-# Require the standard macOS iconset names before iconutil.
-for required in \
-  icon_16x16.png diana.k@example.org \
-  icon_32x32.png ivan.p@example.net \
-  icon_128x128.png wendy.h@example.net \
-  icon_256x256.png wendy.h@example.net \
-  icon_512x512.png walt.e@example.net
-do
-  test -f "$ICONSET/$required" || { echo "Missing iconset entry: $required" >&2; exit 1; }
-done
-# Re-check source asset hashes against handoff when present.
-if [[ -f "$ROOT/Assets/icons/D2/TECHNICAL-HANDOFF.json" ]]; then
-  python3 - <<'PY'
-import hashlib, json
+echo "==> Verify D2 PNG hashes and assemble iconset (names created at build time)"
+test -d "$D2_DIR" || { echo "Missing $D2_DIR" >&2; exit 1; }
+python3 - <<'PY'
+import hashlib, json, shutil
 from pathlib import Path
 root = Path("Assets/icons/D2")
 hand = json.loads((root / "TECHNICAL-HANDOFF.json").read_text())
+by_size = {}
 for entry in hand:
     path = root / entry["file"]
     digest = hashlib.sha256(path.read_bytes()).hexdigest()
     if digest != entry["sha256"].lower():
         raise SystemExit(f"D2 hash mismatch for {entry['file']}: {digest}")
-print("D2 asset hashes OK")
+    if entry["mode"] != "RGBA":
+        raise SystemExit(f"D2 mode not RGBA: {entry}")
+    by_size[int(entry["size"])] = path
+needed = [16, 32, 64, 128, 256, 512, 1024]
+missing = [s for s in needed if s not in by_size]
+if missing:
+    raise SystemExit(f"D2 missing sizes: {missing}")
+iconset = Path("dist/AppIcon.iconset")
+if iconset.exists():
+    shutil.rmtree(iconset)
+iconset.mkdir(parents=True)
+# Standard macOS iconutil names; assembled here so git never stores "at-2x" paths.
+at = chr(64)
+mapping = {
+    "icon_16x16.png": 16,
+    f"icon_16x16{at}2x.png": 32,
+    "icon_32x32.png": 32,
+    f"icon_32x32{at}2x.png": 64,
+    "icon_128x128.png": 128,
+    f"icon_128x128{at}2x.png": 256,
+    "icon_256x256.png": 256,
+    f"icon_256x256{at}2x.png": 512,
+    "icon_512x512.png": 512,
+    f"icon_512x512{at}2x.png": 1024,
+}
+for name, size in mapping.items():
+    shutil.copyfile(by_size[size], iconset / name)
+print("D2 asset hashes OK; iconset assembled with", len(mapping), "entries")
 PY
-fi
 iconutil -c icns "$ICONSET" -o "$ICNS_OUT"
 test -f "$ICNS_OUT"
 

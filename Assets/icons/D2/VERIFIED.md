@@ -13,3 +13,5 @@ Known limitations retained: weak 16/32 eye detail; large-size forward bias; NOT 
 | `fs-monitor-icon-D2-64.png` | 64 | RGBA | `2330c6b22a66b1a76857f39d4efd6253ac9a0bd191ea55d10b14631117605f1d` | yes |
 | `fs-monitor-icon-D2-32.png` | 32 | RGBA | `61185ead5784a5d1f1e5057e2acb5a7081fde31d5c3f4843e58d20fbe1c7297b` | yes |
 | `fs-monitor-icon-D2-16.png` | 16 | RGBA | `319350e85ab4aa7316eee3e34f6ba83b8fed10a322f6ba2d8a5cbd779c358077` | yes |
+
+Iconset with macOS at-2x names is assembled at package time from these PNGs (not stored in git), to avoid path mangling.
