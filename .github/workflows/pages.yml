@@ -44,8 +44,10 @@ jobs:
           assert 'lang="zh-CN"' in html
           assert "FSEvents" in html
           assert "100% 物理 IO" in html
-          assert "Releases" in html
-          assert "早期 demo" in html
+          assert "v0.1.1-beta.1" in html
+          assert "未公证" in html
+          assert "Liquid Glass" in html
+          assert "未验收" in html
           assert re.search(r"sqlite|fs_usage", html, re.I) is None
           assert "建立基线" in guide
           assert "Gatekeeper" in guide
