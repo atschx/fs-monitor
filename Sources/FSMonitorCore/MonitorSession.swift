@@ -39,11 +39,15 @@ public struct MonitorSession: Equatable, Sendable {
     public var report: AttributionReport
     public var isScanning: Bool
     public var isMonitoring: Bool
+    /// True while a start/stop process-counter sample is in flight. Blocks overlapping monitor actions.
+    public var isProcessSamplePending: Bool
     public var needsProcessWindowReset: Bool
     public var lastError: String?
     public var statusMessage: String?
     public var scanIssues: [ScanIssue]
     public var progress: ScanProgress?
+    /// When true, summary numbers are from a previously accepted scan; the latest attempt failed or was cancelled.
+    public var showingStaleAcceptedResults: Bool
 
     public init() {
         selectedPath = nil
@@ -63,17 +67,27 @@ public struct MonitorSession: Equatable, Sendable {
         )
         isScanning = false
         isMonitoring = false
+        isProcessSamplePending = false
         needsProcessWindowReset = false
         lastError = nil
         statusMessage = "尚未选择目录，不会扫描。"
         scanIssues = []
         progress = nil
+        showingStaleAcceptedResults = false
     }
 
-    public var canEstablishBaseline: Bool { selectedPath != nil && !isScanning }
-    public var canRescan: Bool { baseline != nil && !isScanning }
-    public var canStartMonitoring: Bool { baseline != nil && !isMonitoring && !isScanning }
-    public var canStopMonitoring: Bool { isMonitoring }
+    public var canEstablishBaseline: Bool {
+        selectedPath != nil && !isScanning && !isProcessSamplePending
+    }
+    public var canRescan: Bool {
+        baseline != nil && !isScanning && !isProcessSamplePending
+    }
+    public var canStartMonitoring: Bool {
+        baseline != nil && !isMonitoring && !isScanning && !isProcessSamplePending
+    }
+    public var canStopMonitoring: Bool {
+        isMonitoring && !isProcessSamplePending
+    }
 
     public mutating func selectDirectory(path: String) -> SessionActionResult {
         let trimmed = path.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -84,6 +98,7 @@ public struct MonitorSession: Equatable, Sendable {
         selectedPath = trimmed
         isMonitoring = false
         isScanning = false
+        isProcessSamplePending = false
         baseline = nil
         current = nil
         diff = nil
@@ -96,6 +111,7 @@ public struct MonitorSession: Equatable, Sendable {
         scanIssues = []
         progress = nil
         needsProcessWindowReset = false
+        showingStaleAcceptedResults = false
         lastError = nil
         statusMessage = "已选择目录，尚未扫描。建立基线后才会读取该目录。"
         refreshReport()
@@ -105,6 +121,10 @@ public struct MonitorSession: Equatable, Sendable {
     public mutating func prepareScan(_ purpose: ScanPurpose) -> SessionActionResult {
         guard selectedPath != nil else {
             lastError = "请先选择目录。选择之前不会扫描。"
+            return .rejected(lastError!)
+        }
+        guard !isProcessSamplePending else {
+            lastError = "全进程计数采样尚未结束，暂不能开始扫描。"
             return .rejected(lastError!)
         }
         guard !isScanning else {
@@ -117,6 +137,7 @@ public struct MonitorSession: Equatable, Sendable {
         }
         isScanning = true
         lastError = nil
+        showingStaleAcceptedResults = false
         progress = ScanProgress(visited: 0, currentRelativePath: "")
         statusMessage = purpose == .baseline ? "正在建立基线…" : "正在再次扫描…"
         return .accepted(statusMessage)
@@ -130,10 +151,12 @@ public struct MonitorSession: Equatable, Sendable {
         progress = nil
         if snapshot.cancelled || !snapshot.completed {
             let message = snapshot.cancelled
-                ? "扫描已取消，基线和当前结果都没有被这次不完整的扫描替换。"
-                : (snapshot.failureReason ?? "扫描没有完成，结果未采用。")
+                ? "扫描已取消。这次不完整结果未采用；下方若仍有数字，来自上一次成功采用的扫描。"
+                : (snapshot.failureReason.map { "\($0) 这次结果未采用；下方若仍有数字，来自上一次成功采用的扫描。" }
+                    ?? "扫描没有完成，结果未采用；下方若仍有数字，来自上一次成功采用的扫描。")
             lastError = message
             statusMessage = message
+            showingStaleAcceptedResults = baseline != nil || current != nil
             refreshReport()
             return .rejected(message)
         }
@@ -152,7 +175,11 @@ public struct MonitorSession: Equatable, Sendable {
             correlation = nil
             needsProcessWindowReset = wasMonitoring
             if wasMonitoring {
-                statusMessage = "已建立新基线，并清空本窗口的操作证据。监控仍在进行，正在重新采样全进程计数。采样时刻与扫描时刻不同。"
+                isProcessSamplePending = true
+                processStart = nil
+                processLatest = nil
+                correlation = nil
+                statusMessage = "已建立新基线，并清空本窗口的操作证据。监控仍在进行，正在重新采样全进程计数（过渡中请勿重复操作）。采样时刻与扫描时刻不同。"
             } else {
                 statusMessage = "基线已建立。可以开始监控，或在目录变化后再次扫描。"
             }
@@ -160,6 +187,7 @@ public struct MonitorSession: Equatable, Sendable {
             guard let baseline else {
                 lastError = "没有基线，复扫结果未采用。"
                 statusMessage = lastError
+                showingStaleAcceptedResults = current != nil
                 refreshReport()
                 return .rejected(lastError!)
             }
@@ -171,9 +199,11 @@ public struct MonitorSession: Equatable, Sendable {
 
         scanIssues = snapshot.issues
         if !snapshot.issues.isEmpty {
-            statusMessage = (statusMessage ?? "") + " 有 \(snapshot.issues.count) 条路径问题，合计不含这些路径。"
+            statusMessage = (statusMessage ?? "")
+                + " 扫描已完成，但有 \(snapshot.issues.count) 条路径无法读取或未进入（部分路径结果）；合计不含这些路径；差异中记为覆盖缺口，不作确定删除/新增。这与整次扫描失败不同。"
         }
         lastError = nil
+        showingStaleAcceptedResults = false
         refreshReport()
         return .accepted(statusMessage)
     }
@@ -187,6 +217,10 @@ public struct MonitorSession: Equatable, Sendable {
             lastError = "扫描仍在进行，暂不能开始监控。"
             return .rejected(lastError!)
         }
+        guard !isProcessSamplePending else {
+            lastError = "全进程计数采样尚未结束，暂不能开始或停止监控。"
+            return .rejected(lastError!)
+        }
         guard !isMonitoring else {
             lastError = "监控已经在进行。"
             return .rejected(lastError!)
@@ -194,8 +228,15 @@ public struct MonitorSession: Equatable, Sendable {
         return .accepted(nil)
     }
 
+    public mutating func beginProcessSampleWait(message: String) {
+        isProcessSamplePending = true
+        lastError = nil
+        statusMessage = message
+    }
+
     public mutating func beginMonitoring(processSample: ProcessIOSnapshot) {
         isMonitoring = true
+        isProcessSamplePending = false
         processStart = processSample
         processLatest = nil
         correlation = nil
@@ -211,13 +252,22 @@ public struct MonitorSession: Equatable, Sendable {
         refreshReport()
     }
 
+    public mutating func cancelProcessSampleWait(message: String) {
+        isProcessSamplePending = false
+        lastError = message
+        statusMessage = message
+    }
+
     public mutating func markMonitoringStoppedAwaitingSample() {
         isMonitoring = false
-        statusMessage = "监控已停止，正在采样全进程计数…"
+        isProcessSamplePending = true
+        correlation = nil
+        statusMessage = "监控已停止，正在采样全进程计数。此前的进程差值已收起，避免与未完成的新采样混淆。"
     }
 
     public mutating func stopMonitoring(processSample: ProcessIOSnapshot) {
         isMonitoring = false
+        isProcessSamplePending = false
         processLatest = processSample
         if let processStart {
             correlation = ProcessIOCorrelation.correlate(from: processStart, to: processSample)
@@ -245,6 +295,7 @@ public struct MonitorSession: Equatable, Sendable {
         processLatest = nil
         correlation = nil
         needsProcessWindowReset = false
+        isProcessSamplePending = false
         statusMessage = "已用新的全进程计数作为窗口起点。这个时刻不是目录扫描时刻，差值也不是目标目录的 I/O。"
         refreshReport()
     }

@@ -7,6 +7,7 @@ on:
     paths:
       - "docs/**"
       - ".github/workflows/pages.yml"
+      - "README.md"
   workflow_dispatch:
 
 permissions:
@@ -16,7 +17,7 @@ permissions:
 
 concurrency:
   group: pages
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -25,24 +26,29 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Build guide.html from guide.md
+        run: python3 docs/build_guide_html.py
+
       - name: Verify landing page files
         run: |
           test -f docs/index.html
           test -f docs/style.css
-          grep -q 'fs-monitor' docs/index.html
-          grep -q 'lang="zh-CN"' docs/index.html
+          test -f docs/guide.md
+          test -f docs/guide.html
           python3 - <<'PY'
           from pathlib import Path
           import re
           html = Path("docs/index.html").read_text(encoding="utf-8")
+          guide = Path("docs/guide.html").read_text(encoding="utf-8")
           css = Path("docs/style.css").read_text(encoding="utf-8")
-          assert "<title>" in html and "</html>" in html
           assert 'lang="zh-CN"' in html
           assert "FSEvents" in html
-          assert "proc_pid_rusage" in html
           assert "100% 物理 IO" in html
+          assert "Releases" in html
           assert "早期 demo" in html
           assert re.search(r"sqlite|fs_usage", html, re.I) is None
+          assert "建立基线" in guide
+          assert "Gatekeeper" in guide
           assert "--sea:" in css
           print("static checks ok")
           PY
