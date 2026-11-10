@@ -43,7 +43,7 @@ jobs:
 
       - name: Package .app (includes swift test + release build)
         env:
-          MARKETING_VERSION: "0.1.0"
+          MARKETING_VERSION: "0.1.1"
           BUILD_NUMBER: ${{ github.run_number }}
           GIT_SHA: ${{ github.sha }}
           OUTPUT_DIR: ${{ github.workspace }}/dist
@@ -51,7 +51,7 @@ jobs:
           chmod +x scripts/package-macos-app.sh
           /usr/bin/time -l bash scripts/package-macos-app.sh
           grep -q '^architectures=arm64$' dist/BUILD_INFO.txt
-          grep -q '^marketing_version=0.1.0$' dist/BUILD_INFO.txt
+          grep -q '^marketing_version=0.1.1$' dist/BUILD_INFO.txt
           grep -q '^icon=D2_huluwa_nova_selected$' dist/BUILD_INFO.txt
           test -f dist/FSMonitor.app/Contents/Resources/AppIcon.icns
           # unzipped layout check for icon presence after packaging leaves dist/FSMonitor.app

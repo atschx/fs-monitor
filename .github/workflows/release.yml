@@ -4,13 +4,13 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Unused prerelease git tag to create (example: v0.1.0-test.1). Must not already exist."
+        description: "Unused prerelease git tag to create (example: v0.1.1-beta.1). Must not already exist."
         required: true
         type: string
       marketing_version:
-        description: "CFBundleShortVersionString / marketing version (example: 0.1.0). Separate from tag."
+        description: "CFBundleShortVersionString / marketing version (example: 0.1.1). Separate from tag."
         required: true
-        default: "0.1.0"
+        default: "0.1.1"
         type: string
       publish:
         description: "If true, create a NEW prerelease at the exact built commit. Refuses existing tag/assets; never clobbers."

@@ -134,7 +134,7 @@ final class DiffSessionAttributionTests: XCTestCase {
         let result = session.finishScan(snapshot, purpose: .baseline)
         XCTAssertFalse(result.accepted)
         XCTAssertNil(session.baseline)
-        XCTAssertTrue(session.statusMessage?.contains("尚未扫描") == true)
+        XCTAssertTrue(session.statusMessage?.contains("建立基线") == true)
     }
 
     func testPathContainmentRejectsPrefixSiblings() {
