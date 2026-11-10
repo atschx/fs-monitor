@@ -1,0 +1,111 @@
+name: Pre-release macOS app
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Pre-release tag (example: v0.1.0-test.1)"
+        required: true
+        type: string
+      publish:
+        description: "Create GitHub pre-release and upload zip (requires write access)"
+        required: true
+        default: false
+        type: boolean
+
+concurrency:
+  group: release-macos
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  package-and-maybe-publish:
+    name: Package macOS .app
+    runs-on: macos-15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Show environment
+        run: |
+          echo "runner=$(uname -m)"
+          sw_vers
+          xcodebuild -version
+          swift --version
+
+      - name: Package .app
+        env:
+          SHORT_VERSION: ${{ inputs.tag }}
+          BUILD_NUMBER: ${{ github.run_number }}
+          OUTPUT_DIR: ${{ github.workspace }}/dist
+        run: |
+          chmod +x scripts/package-macos-app.sh
+          /usr/bin/time -l bash scripts/package-macos-app.sh
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FSMonitor-macos-app-${{ inputs.tag }}
+          path: |
+            dist/FSMonitor.app.zip
+            dist/FSMonitor.app.sha256
+            dist/BUILD_INFO.txt
+            dist/codesign.txt
+            dist/spctl.txt
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Create GitHub pre-release
+        if: ${{ inputs.publish }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          test -f dist/FSMonitor.app.zip
+          test -f dist/FSMonitor.app.sha256
+          ARCHS=$(awk -F= '/^architectures=/{print $2}' dist/BUILD_INFO.txt)
+          SIGNING=$(awk -F= '/^signing=/{print $2}' dist/BUILD_INFO.txt)
+          NOTES=$(cat <<EOF
+          ## FSMonitor 测试预发布
+
+          - 产物：可双击的 \`FSMonitor.app\`（zip）
+          - 架构：\`${ARCHS}\`（以 \`BUILD_INFO.txt\` / \`lipo\` 为准）
+          - 签名：\`${SIGNING}\`，**未**使用 Apple Developer ID，**未**公证
+          - 系统：macOS 13+
+          - 这是早期 demo，不能做 100% 物理 IO 归因
+
+          ### 首次打开（不关闭 Gatekeeper / SIP）
+
+          1. 下载 \`FSMonitor.app.zip\` 并解压
+          2. 将 \`FSMonitor.app\` 拖到「应用程序」或任意目录
+          3. 若系统提示无法验证开发者：选中 App → 右键「打开」→ 在对话框中确认打开
+          4. 不要关闭 Gatekeeper，不要关闭 SIP，不要执行全局绕过命令
+
+          SHA256：
+
+          \`\`\`
+          $(cat dist/FSMonitor.app.sha256)
+          \`\`\`
+          EOF
+          )
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists; uploading assets."
+          else
+            gh release create "$TAG" \
+              --prerelease \
+              --title "FSMonitor $TAG (测试版)" \
+              --notes "$NOTES"
+          fi
+          gh release upload "$TAG" \
+            dist/FSMonitor.app.zip \
+            dist/FSMonitor.app.sha256 \
+            dist/BUILD_INFO.txt \
+            dist/codesign.txt \
+            dist/spctl.txt \
+            --clobber
+          gh release view "$TAG" --json url,isPrerelease,tagName,assets

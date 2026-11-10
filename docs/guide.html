@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>FSMonitor 使用指南</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Sora:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="atmosphere" aria-hidden="true"></div>
+  <header class="hero">
+    <p class="brand">fs-monitor</p>
+    <p class="status-chip"><a href="index.html">介绍页</a> · 正文来自 docs/guide.md</p>
+  </header>
+  <main>
+<h1>FSMonitor 使用指南</h1>
+<p>适用对象：已安装或已构建的 <strong>macOS</strong> FSMonitor 早期 demo。本文只描述当前界面里真实存在的流程。</p>
+<p>相关入口：</p>
+<ul class="plain-list">
+<li>仓库说明：<a href="../README.md">README.md</a></li>
+<li>介绍页：https://blog.atschx.me/fs-monitor/</li>
+</ul>
+<h2>1. 准备</h2>
+<ul class="plain-list">
+<li>系统：macOS 13+</li>
+<li>来源：GitHub Releases / Actions 中的 <code>FSMonitor.app.zip</code>，或本机 <code>scripts/package-macos-app.sh</code> / <code>swift build</code></li>
+<li>若为测试包：多为 <strong>ad-hoc 签名</strong>，未公证。用「右键 → 打开」确认启动；不要关闭 Gatekeeper 或 SIP</li>
+</ul>
+<h2>2. 基本流程</h2>
+<h3>2.1 选择目录</h3>
+<ol class="plain-list">
+<li>打开 FSMonitor</li>
+<li>点击「选择目录」</li>
+<li>在系统面板中选一个目录并确认</li>
+</ol>
+<p>选择之前<strong>不会</strong>扫描。应用不上传路径，也不删除文件。</p>
+<h3>2.2 建立基线</h3>
+<ol class="plain-list">
+<li>目录已选中后，点击「建立基线」（若已有基线则为「重新建立基线」）</li>
+<li>等待扫描结束。可随时「取消扫描」；取消后不会用半次扫描替换已有基线</li>
+<li>界面会显示基线逻辑大小、分配块（若可读）等</li>
+</ol>
+<p>重新建立基线会清空当前操作证据；磁盘上的文件不会被删除。</p>
+<h3>2.3 开始 / 停止监控（可选）</h3>
+<ol class="plain-list">
+<li>在已有基线后，点击「开始监控」</li>
+<li>应用开始接收所选目录下的 FSEvents</li>
+<li>点击「停止监控」结束接收。停止监控<strong>不会</strong>删除目录</li>
+</ol>
+<p>开始监控后才会接收 FSEvents。</p>
+<h3>2.4 再次扫描（复扫）</h3>
+<ol class="plain-list">
+<li>在监控期间或之后，点击「再次扫描」</li>
+<li>对照基线查看新增 / 删除 / 变大 / 变小，以及顶层子项汇总</li>
+<li>可用排序：增长降序、增长升序、当前大小、路径</li>
+</ol>
+<h3>2.5 阅读证据</h3>
+<ul class="plain-list">
+<li><strong>操作证据</strong>：来自 FSEvents。每条有时间、相对路径、标志；<strong>没有 PID</strong>。路径重叠 ≠ 因果</li>
+<li><strong>进程读写</strong>：来自 <code>proc_pid_rusage</code> 的全进程计数差值。标签会写明那是全进程计数，不是此目录的 I/O。不可获得的计数不会显示成 0</li>
+<li>界面固定提示：时间相近不是因果；不能做 100% 物理 IO 归因</li>
+</ul>
+<p>证据条数有界面保留上限；更早的可能被丢弃，界面会提示丢弃数量。</p>
+<h2>3. 权限与边界</h2>
+<ul class="plain-list">
+<li>默认以当前用户运行，不需要 root，也不使用 Endpoint Security</li>
+<li>访问桌面、文稿、下载等目录时，系统可能弹出隐私提示；那是 macOS 授权</li>
+<li>被拒绝的路径会出现在「限制与错误」；合计不包含这些路径</li>
+<li>可选：在「系统设置」中授予完全磁盘访问，以提高读取成功率。应用不会假装已经拥有它</li>
+<li>符号链接不会跟到所选目录之外；其他挂载点不会进入</li>
+<li>应用不会删除文件、结束进程、关闭 SIP，也不会上传扫描内容</li>
+</ul>
+<h2>4. 用隔离临时目录练习（可选）</h2>
+<p>仓库脚本只操作带标记的临时目录，避免误扫用户目录：</p>
+<pre><code>
+DIR=$(scripts/isolated-demo.sh prepare)
+
+# 在应用中选择 $DIR，建立基线 → 开始监控
+
+scripts/isolated-demo.sh grow &quot;$DIR&quot;
+
+# 再次扫描，观察 data/cache.bin、logs/new.log 等
+
+scripts/isolated-demo.sh cleanup &quot;$DIR&quot;
+
+</code></pre>
+<p><code>cleanup</code> 要求目录内存在 <code>.fs-monitor-demo-marker</code> 且路径包含 <code>fs-monitor-demo</code>。</p>
+<h2>5. 未知项与已知缺口（不是功能）</h2>
+<p>以下<strong>不是</strong>当前版本能力，界面也不会伪装成已实现：</p>
+<ul class="plain-list">
+<li>跨会话把历史扫描结果持久化后再回溯对比</li>
+<li>整块磁盘 / 系统级 IO 仪表盘</li>
+<li>「复制暂停」类归因或完整读写覆盖因果链</li>
+<li>指向具体写入进程的确定性结论（FSEvents 无 PID）</li>
+<li>正式 Developer ID 签名与 Apple 公证发行</li>
+</ul>
+<h2>6. 卸载</h2>
+<p>没有独立安装器时：</p>
+<ol class="plain-list">
+<li>退出 FSMonitor</li>
+<li>将 <code>FSMonitor.app</code> 移到废纸篓并清空（或删除你放置它的目录）</li>
+<li>本应用不会在未选择目录时扫描；若你曾授予「完全磁盘访问」，可在系统设置中自行撤销</li>
+</ol>
+<h2>7. 常见问题</h2>
+<p><strong>打不开 / 提示无法验证开发者？</strong> 测试包多为 ad-hoc 签名。使用「右键 → 打开」。不要关闭 Gatekeeper。</p>
+<p><strong>为什么看不到是谁写入的？</strong> FSEvents 不带 PID。进程表只是全进程旁证。</p>
+<p><strong>数字对不上磁盘工具？</strong> 逻辑大小、分配块、压缩、稀疏、缓存、读不到的路径都会造成差异。不能 100% 物理 IO 归因。</p>
+<p><strong>Linux 能跑吗？</strong> 不能启动界面。本项目只支持 macOS；CI 已不再跑 Linux 测试。</p>
+<p><strong>没有下载按钮？</strong> 以 <a href="https://github.com/atschx/fs-monitor/releases">Releases</a> 实际页面为准。若为空，请用源码构建或 CI 工件，不要假设存在未发布的安装包。</p>
+  </main>
+  <footer>
+    <p><a href="index.html">返回介绍</a> · <a href="https://github.com/atschx/fs-monitor/blob/main/docs/guide.md">guide.md 源文件</a></p>
+  </footer>
+</body>
+</html>
