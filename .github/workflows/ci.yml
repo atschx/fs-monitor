@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  linux-core:
+    name: Linux core tests (not a macOS build)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: swift-actions/setup-swift@v2
+        with:
+          swift-version: "6.0.3"
+      - name: Install clang
+        run: sudo apt-get update && sudo apt-get install -y clang
+      - name: Show environment
+        run: |
+          uname -a
+          swift --version
+      - name: Test portable core
+        run: swift test --parallel
+
+  macos:
+    name: macOS build and tests
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Show environment
+        run: |
+          sw_vers
+          xcodebuild -version
+          swift --version
+      - name: Test
+        run: swift test --parallel
+      - name: Build the macOS app
+        run: swift build -c release --product FSMonitor
