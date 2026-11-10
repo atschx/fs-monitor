@@ -51,10 +51,10 @@ public enum SessionPresentation {
         } else if session.isProcessSamplePending {
             // Start vs stop sample cannot be reliably distinguished — keep honest wording.
             monitoring = "监控：采样过渡中"
-        } else if session.baseline != nil {
-            monitoring = "监控：已停止"
         } else if session.selectedPath != nil {
-            monitoring = "监控：未开始"
+            // Idle / never-started / after-stop share one static label — do not claim
+            // "已停止" without a dedicated stop feedback path (statusMessage).
+            monitoring = "监控：未运行"
         } else {
             monitoring = nil
         }
@@ -80,8 +80,9 @@ public enum SessionPresentation {
         var parts: [String] = []
         if let monitoring { parts.append(monitoring) }
         if let scanning { parts.append(scanning) }
-        if session.isScanning, !session.isMonitoring, session.baseline != nil {
-            parts.append("监控已停止，扫描继续")
+        // Static dual-task hint (not stop-event copy). Immediate stop feedback stays on statusMessage.
+        if session.isScanning, !session.isMonitoring, !session.isProcessSamplePending {
+            parts.append("监控未运行，扫描仍在进行")
         }
         return DualTaskStatus(
             monitoringLine: monitoring,

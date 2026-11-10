@@ -156,8 +156,8 @@ struct ContentView: View {
                         .lineLimit(1)
                         .truncationMode(.middle)
                 }
-                if !session.isMonitoring, session.baseline != nil {
-                    Text("监控已停止，扫描继续。取消扫描与停止监控是两个独立操作。")
+                if !session.isMonitoring, !session.isProcessSamplePending {
+                    Text("监控未运行，扫描仍在进行。取消扫描与停止监控是两个独立操作。")
                         .font(.caption)
                         .foregroundStyle(.orange)
                 }

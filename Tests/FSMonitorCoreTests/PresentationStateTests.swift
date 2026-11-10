@@ -86,15 +86,41 @@ final class PresentationStateTests: XCTestCase {
         session.markMonitoringStoppedAwaitingSample()
         XCTAssertFalse(session.isMonitoring)
         XCTAssertTrue(session.isScanning)
+        XCTAssertTrue(session.statusMessage?.contains("已停止监控") == true)
         XCTAssertTrue(session.statusMessage?.contains("扫描仍在继续") == true)
 
-        let dual = SessionPresentation.dualTaskStatus(for: session)
-        XCTAssertTrue(dual.combinedSummary.contains("监控已停止，扫描继续") || dual.combinedSummary.contains("扫描"))
+        // During sample transition, dual-task uses sampling label — not static "已停止".
+        var dual = SessionPresentation.dualTaskStatus(for: session)
+        XCTAssertEqual(dual.monitoringLine, "监控：采样过渡中")
         XCTAssertEqual(SessionPresentation.primaryAction(for: session), .none)
 
         session.stopMonitoring(processSample: sample([], at: 2))
         XCTAssertTrue(session.isScanning)
+        XCTAssertTrue(session.statusMessage?.contains("已停止监控") == true)
         XCTAssertTrue(session.statusMessage?.contains("扫描仍在继续") == true)
+
+        // After stop settles, static dual-task must say 未运行 (may never have been started either).
+        dual = SessionPresentation.dualTaskStatus(for: session)
+        XCTAssertEqual(dual.monitoringLine, "监控：未运行")
+        XCTAssertTrue(dual.combinedSummary.contains("监控未运行，扫描仍在进行"))
+        XCTAssertFalse(dual.combinedSummary.contains("监控：已停止"))
+    }
+
+    func testBaselineWithoutEverMonitoringUsesNotRunningNotStopped() {
+        var session = MonitorSession()
+        _ = session.selectDirectory(path: "/tmp/example")
+        _ = session.prepareScan(.baseline)
+        XCTAssertTrue(session.finishScan(emptySnapshot(completed: true), purpose: .baseline).accepted)
+        XCTAssertFalse(session.isMonitoring)
+
+        let idle = SessionPresentation.dualTaskStatus(for: session)
+        XCTAssertEqual(idle.monitoringLine, "监控：未运行")
+        XCTAssertFalse(idle.combinedSummary.contains("已停止"))
+
+        XCTAssertTrue(session.prepareScan(.rescan).accepted)
+        let scanning = SessionPresentation.dualTaskStatus(for: session)
+        XCTAssertEqual(scanning.monitoringLine, "监控：未运行")
+        XCTAssertTrue(scanning.combinedSummary.contains("监控未运行，扫描仍在进行"))
     }
 
     func testCancelOrFailDoesNotAdoptIncompleteOrFakeSuccessTime() {
