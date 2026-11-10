@@ -181,7 +181,7 @@ public struct MonitorSession: Equatable, Sendable {
                 correlation = nil
                 statusMessage = "已建立新基线，并清空本窗口的操作证据。监控仍在进行，正在重新采样全进程计数（过渡中请勿重复操作）。采样时刻与扫描时刻不同。"
             } else {
-                statusMessage = "基线已建立。可以开始监控，或在目录变化后再次扫描。"
+                statusMessage = "基线已建立。可以开始监控，或在目录变化后「复扫查看变化」。"
             }
         case .rescan:
             guard let baseline else {
