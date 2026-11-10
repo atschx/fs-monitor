@@ -45,13 +45,15 @@ jobs:
           assert "FSEvents" in html
           assert "100% 物理 IO" in html
           assert "v0.1.1-beta.1" in html
-          assert "发布准备中" in html
-          assert "Releases" in html
+          assert "releases/tag/v0.1.1-beta.1" in html
+          assert "e31843a4cbb1b1f5fc543ccd2cd561061487519efd18db1f97e8e29e5d7031e4" in html
+          assert "f1b077f96e5c7244fe55bc42bb060d45e9e09769" in html
           assert "未公证" in html
           assert "Liquid Glass" in html
           assert "未验收" in html
           assert "负责人已跳过" not in html
           assert "需求仍开放" not in html
+          assert "发布准备中" not in html
           assert re.search(r"sqlite|fs_usage", html, re.I) is None
           assert "建立基线" in guide
           assert "Gatekeeper" in guide

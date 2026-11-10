@@ -22,12 +22,12 @@
 <ul class="plain-list">
 <li>仓库说明：<a href="../README.md">README.md</a></li>
 <li>介绍页：https://blog.atschx.me/fs-monitor/</li>
-<li>目标预发布标识：<code>v0.1.1-beta.1</code>（包内 0.1.1）。<strong>发布准备中</strong>时请看 <a href="https://github.com/atschx/fs-monitor/releases">Releases</a> 实际列表；早期 <a href="https://github.com/atschx/fs-monitor/releases/tag/v0.1.0-test">v0.1.0-test</a> 仍保留</li>
+<li>当前预发布：<a href="https://github.com/atschx/fs-monitor/releases/tag/v0.1.1-beta.1">v0.1.1-beta.1</a>（包内 0.1.1；早期 <a href="https://github.com/atschx/fs-monitor/releases/tag/v0.1.0-test">v0.1.0-test</a> 仍保留）</li>
 </ul>
 <h2>1. 准备</h2>
 <ul class="plain-list">
 <li>系统目标：macOS 13+；当前公开测试包架构为 <strong>仅 Apple Silicon（arm64）</strong></li>
-<li>来源：目标预发布创建后，从其 Release 下载 <code>FSMonitor.app.zip</code> 并核对该页 SHA-256；或本机（arm64 Mac）<code>scripts/package-macos-app.sh</code></li>
+<li>来源：优先 <a href="https://github.com/atschx/fs-monitor/releases/tag/v0.1.1-beta.1">v0.1.1-beta.1</a> 中的 <code>FSMonitor.app.zip</code>（核对该页 SHA-256）；或本机（arm64 Mac）<code>scripts/package-macos-app.sh</code></li>
 <li>测试包为 <strong>ad-hoc 签名</strong>，<strong>未公证</strong>；<code>spctl --assess</code> 为 rejected（预期）</li>
 <li><strong>同一包在真实 Mac 上的交互尚未验收</strong>。请区分「CI/发布打包」与「实机验收」</li>
 <li><strong>Liquid Glass 未提供</strong></li>
