@@ -21,10 +21,9 @@ struct ContentView: View {
             content
         }
         .background(FSTheme.windowBackground)
-        .frame(minWidth: 720, minHeight: 480)
         .navigationTitle("FSMonitor")
         .confirmationDialog(
-            "更换目录会停止监控并清除当前基线。磁盘上的文件不会被删除。",
+            "更换目录会停止监控并清除内存中的对照结果：\(SessionPresentation.directoryChangeClears.joined(separator: "；"))。磁盘上的文件不会被删除。\(SessionPresentation.exitRetentionFact)",
             isPresented: $confirmReplace,
             titleVisibility: .visible
         ) {
@@ -36,7 +35,7 @@ struct ContentView: View {
             Button("取消", role: .cancel) {}
         }
         .confirmationDialog(
-            "重新建立基线会清空当前操作证据。磁盘上的文件不会被删除。",
+            "重新建立基线会清空本窗口的操作证据，并以新扫描替换对照。磁盘上的文件不会被删除。",
             isPresented: $confirmBaseline,
             titleVisibility: .visible
         ) {
@@ -45,60 +44,80 @@ struct ContentView: View {
         }
     }
 
+    private var primaryAction: PrimaryAction {
+        SessionPresentation.primaryAction(for: session)
+    }
+
     private var toolbar: some View {
         HStack(spacing: FSTheme.spacing8) {
             Button("选择目录") { selectFolder() }
-                .buttonStyle(.bordered)
+                .modifier(EmphasisButton(emphasized: primaryAction == .chooseDirectory))
                 .disabled(session.isScanning || session.isProcessSamplePending)
 
-            Button(session.baseline == nil ? "建立基线" : "重新建立基线") {
-                if session.baseline != nil && (session.isMonitoring || !session.evidence.isEmpty) {
-                    confirmBaseline = true
-                } else {
-                    controller.establishBaseline()
+            if session.baseline == nil {
+                Button("建立基线") { controller.establishBaseline() }
+                    .modifier(EmphasisButton(emphasized: primaryAction == .establishBaseline))
+                    .disabled(!session.canEstablishBaseline)
+            } else {
+                Button("重新建立基线") {
+                    if session.isMonitoring || !session.evidence.isEmpty {
+                        confirmBaseline = true
+                    } else {
+                        controller.establishBaseline()
+                    }
                 }
+                .buttonStyle(.bordered)
+                .disabled(!session.canEstablishBaseline)
             }
-            .buttonStyle(.bordered)
-            .disabled(!session.canEstablishBaseline)
 
             Spacer(minLength: FSTheme.spacing16)
 
-            if session.isProcessSamplePending {
-                Label("采样中", systemImage: "clock")
-                    .font(.caption)
-                    .foregroundStyle(.orange)
-            } else if session.isMonitoring {
-                Label("监控中", systemImage: "circle.fill")
-                    .font(.caption)
-                    .foregroundStyle(.green)
-                    .symbolRenderingMode(.hierarchical)
-            }
+            dualTaskBadge
 
             if session.isMonitoring {
                 Button("停止监控") { controller.stopMonitoring() }
                     .buttonStyle(.bordered)
                     .disabled(!session.canStopMonitoring)
+                    .help("只停止监控，不会取消仍在进行的扫描。")
             } else {
                 Button("开始监控") { controller.startMonitoring() }
-                    .buttonStyle(.bordered)
+                    .modifier(EmphasisButton(emphasized: primaryAction == .startMonitoring))
                     .disabled(!session.canStartMonitoring)
             }
 
-            // Native prominent control + modest D2 warm tint (theme secondary to AppKit/SwiftUI).
             Button("复扫查看变化") { controller.rescan() }
-                .buttonStyle(.borderedProminent)
-                .tint(FSTheme.primaryAction)
+                .modifier(EmphasisButton(emphasized: primaryAction == .rescan))
                 .disabled(!session.canRescan)
                 .accessibilityLabel("复扫查看变化")
 
+            // Cancel stays available during sample transition if a scan is still running.
             if session.isScanning {
                 Button("取消扫描") { controller.cancelScan() }
                     .buttonStyle(.bordered)
+                    .help("只取消扫描，不会被描述为停止全部任务。")
             }
         }
         .controlSize(.regular)
         .padding(.horizontal, FSTheme.spacing16)
         .padding(.vertical, FSTheme.spacing12)
+    }
+
+    @ViewBuilder
+    private var dualTaskBadge: some View {
+        let dual = SessionPresentation.dualTaskStatus(for: session)
+        if session.isProcessSamplePending {
+            Label(dual.combinedSummary, systemImage: "clock")
+                .font(.caption)
+                .foregroundStyle(.orange)
+                .lineLimit(2)
+                .help(dual.combinedSummary)
+        } else if session.isMonitoring || session.isScanning {
+            Label(dual.combinedSummary, systemImage: session.isMonitoring ? "circle.fill" : "doc.text.magnifyingglass")
+                .font(.caption)
+                .foregroundStyle(session.isMonitoring ? Color.green : Color.secondary)
+                .lineLimit(2)
+                .help(dual.combinedSummary)
+        }
     }
 
     private var disclaimer: some View {
@@ -113,6 +132,40 @@ struct ContentView: View {
 
     @ViewBuilder
     private var statusBanners: some View {
+        let dual = SessionPresentation.dualTaskStatus(for: session)
+        if session.isScanning || session.isMonitoring || session.isProcessSamplePending {
+            Text(dual.combinedSummary)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, FSTheme.spacing16)
+                .padding(.top, FSTheme.spacing8)
+                .accessibilityLabel(dual.combinedSummary)
+        }
+        if session.isScanning {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(dual.scanningLine ?? "扫描：进行中")
+                    .font(.headline)
+                Text("已访问 \(session.progress?.visited ?? 0) 项（无虚构百分比或剩余时间）")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                if let path = session.progress?.currentRelativePath, !path.isEmpty {
+                    Text(path)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                }
+                if !session.isMonitoring, session.baseline != nil {
+                    Text("监控已停止，扫描继续。取消扫描与停止监控是两个独立操作。")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, FSTheme.spacing16)
+            .padding(.top, FSTheme.spacing8)
+        }
         if let status = session.statusMessage {
             Text(status)
                 .font(.callout)
@@ -588,6 +641,22 @@ private enum ResultPanel: String, CaseIterable, Identifiable {
     case limits = "限制与错误"
 
     var id: String { rawValue }
+}
+
+/// At most one emphasized control: native prominent + optional D2 tint.
+private struct EmphasisButton: ViewModifier {
+    var emphasized: Bool
+
+    func body(content: Content) -> some View {
+        if emphasized {
+            content
+                .buttonStyle(.borderedProminent)
+                .tint(FSTheme.primaryAction)
+        } else {
+            content
+                .buttonStyle(.bordered)
+        }
+    }
 }
 
 private struct StatCard: View {

@@ -44,7 +44,7 @@ final class MonitorController: ObservableObject {
         cancellation?.cancel()
         guard session.isScanning else { return }
         var next = session
-        next.statusMessage = "正在取消扫描…"
+        next.requestScanCancel()
         session = next
     }
 

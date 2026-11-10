@@ -22,7 +22,7 @@
 - 原生 segmented `Picker` 承载五 Tab 与排序；五摘要卡用系统卡片底，非全盘自定义色板
 - 次级「停止监控」；既有状态条（失败/陈旧结果/采样中/覆盖缺口）保留
 - 独立「取消扫描」与停止监控并存（既有能力，未改机制）
-- 窗口：`defaultSize` 建议布局；**未**按组件板硬加 1368×872 最低限制（仅软下限 720×480 保可用性）
+- 窗口：`WindowGroup.defaultSize(1120×760)` 仅为打开时建议尺寸；**无** `minWidth`/`minHeight` 硬下限（已移除本轮曾误加的 720×480；组件板 1368×872 亦非硬限制）
 - 字体：系统动态字体样式（headline/caption/…）；卡片数值 `monospacedDigit`
 - 包内默认 `marketing_version=0.1.1`；目标 Release/tag 约定 **`v0.1.1-beta.1`**（本批不自动发布）
 
@@ -45,3 +45,9 @@ Nova 已目视三图通过本批「监控中」逻辑方向；**不等于全量�
 - 主操作：系统 prominent + D2 tint `#9C4F39`（交接板约 5.85:1）；其余按钮走系统 bordered
 - Tab/排序：系统 segmented（系统浅深色与对比度）
 - 身份珊瑚 `#BE7054` **不作**失败/监控状态色；监控用系统绿，错误用系统红
+
+## Liquid Glass（研究结论，不阻断本批）
+
+- Apple 文档：`glassEffect` / Liquid Glass 随 **macOS 26（Tahoe）SDK**、**Xcode 26** 提供；系统原生控件在用新 SDK 构建并在新系统运行时可自动获得材料。
+- 当前 CI：`macos-15` + **Xcode 16.4** / Swift 6.1.2；部署目标仍为 **macOS 13 arm64**。
+- **本批不调用** `glassEffect`、不自绘仿玻璃、不宣称 macOS 26/27 支持。若未来升 SDK，仅在 `#available(macOS 26, *)` 下评估，且不得压过原生优先原则。
