@@ -14,7 +14,7 @@ CONFIGURATION="${CONFIGURATION:-release}"
 OUTPUT_DIR="${OUTPUT_DIR:-"$ROOT/dist"}"
 BUILD_DIR="${BUILD_DIR:-"$ROOT/.build"}"
 # Marketing version for Info.plist (CFBundleShortVersionString). Must NOT be a git tag string.
-MARKETING_VERSION="${MARKETING_VERSION:-0.1.0}"
+MARKETING_VERSION="${MARKETING_VERSION:-0.1.1}"
 BUILD_NUMBER="${BUILD_NUMBER:-$(git -C "$ROOT" rev-parse --short HEAD 2>/dev/null || echo 0)}"
 GIT_SHA="${GIT_SHA:-$(git -C "$ROOT" rev-parse HEAD 2>/dev/null || echo unknown)}"
 

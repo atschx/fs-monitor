@@ -139,7 +139,7 @@ public struct MonitorSession: Equatable, Sendable {
         lastError = nil
         showingStaleAcceptedResults = false
         progress = ScanProgress(visited: 0, currentRelativePath: "")
-        statusMessage = purpose == .baseline ? "正在建立基线…" : "正在再次扫描…"
+        statusMessage = purpose == .baseline ? "正在建立基线…" : "正在复扫查看变化…"
         return .accepted(statusMessage)
     }
 
