@@ -54,11 +54,30 @@ jobs:
           assert "负责人已跳过" not in html
           assert "需求仍开放" not in html
           assert "发布准备中" not in html
+          assert 'id="team"' in html
+          for name in ("Nova", "Huluwa", "Cook", "Bob", "Eric"):
+              assert name in html
+          for path in (
+              "docs/team/nova.png",
+              "docs/team/huluwa.png",
+              "docs/team/cook.png",
+              "docs/team/bob.png",
+              "docs/team/eric.png",
+          ):
+              assert Path(path).is_file(), path
+          assert "team/nova.png" in html
+          assert "team/huluwa.png" in html
+          assert "team/cook.png" in html
+          assert "team/bob.png" in html
+          assert "team/eric.png" in html
+          assert "alt=" in html
+          assert "不等于实机验收通过" in html
           assert re.search(r"sqlite|fs_usage", html, re.I) is None
           assert "建立基线" in guide
           assert "Gatekeeper" in guide
           assert "负责人已跳过" not in guide
           assert "--sea:" in css
+          assert ".team-grid" in css
           print("static checks ok")
           PY
 
