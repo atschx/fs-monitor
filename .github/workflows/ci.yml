@@ -1,7 +1,10 @@
 name: CI
 
 on:
+  # Feature branches: only pull_request (avoids duplicate push+PR runs).
+  # main: push after merge. Manual: workflow_dispatch.
   push:
+    branches: [main]
     paths-ignore:
       - "docs/**"
       - "README.md"
