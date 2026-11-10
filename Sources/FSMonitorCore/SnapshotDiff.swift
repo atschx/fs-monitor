@@ -7,6 +7,9 @@ public enum ChangeKind: String, Equatable, Sendable {
     case shrunk
     case unchanged
     case typeChanged
+    /// Path absent on one side because that scan did not cover it (permission,
+    /// unlistable directory, skipped mount), not a confident create/delete.
+    case coverageGap
 
     public var label: String {
         switch self {
@@ -16,6 +19,7 @@ public enum ChangeKind: String, Equatable, Sendable {
         case .shrunk: return "缩小"
         case .unchanged: return "未变化"
         case .typeChanged: return "类型变化"
+        case .coverageGap: return "覆盖缺口"
         }
     }
 }
@@ -68,6 +72,7 @@ public struct SnapshotDiff: Equatable, Sendable {
     public var shrunkCount: Int
     public var typeChangedCount: Int
     public var unchangedCount: Int
+    public var coverageGapCount: Int
 
     public init(
         changes: [EntryChange],
@@ -78,7 +83,8 @@ public struct SnapshotDiff: Equatable, Sendable {
         grownCount: Int,
         shrunkCount: Int,
         typeChangedCount: Int,
-        unchangedCount: Int
+        unchangedCount: Int,
+        coverageGapCount: Int = 0
     ) {
         self.changes = changes
         self.logicalDelta = logicalDelta
@@ -89,6 +95,7 @@ public struct SnapshotDiff: Equatable, Sendable {
         self.shrunkCount = shrunkCount
         self.typeChangedCount = typeChangedCount
         self.unchangedCount = unchangedCount
+        self.coverageGapCount = coverageGapCount
     }
 
     public static func compare(baseline: SpaceSnapshot, current: SpaceSnapshot) -> SnapshotDiff {
@@ -99,25 +106,53 @@ public struct SnapshotDiff: Equatable, Sendable {
             guard let change = makeChange(
                 path: path,
                 baseline: baseline.entriesByPath[path],
-                current: current.entriesByPath[path]
+                current: current.entriesByPath[path],
+                baselineIssues: baseline.issues,
+                currentIssues: current.issues
             ) else { continue }
             changes.append(change)
         }
         changes.sort { $0.relativePath < $1.relativePath }
+
+        // Totals omit uncovered paths; undo those false shrinks/grows so aggregate
+        // deltas only reflect confidently observed entries.
+        var logicalDelta = current.totalLogicalBytes - baseline.totalLogicalBytes
+        var allocatedDelta = current.totalAllocatedBytes - baseline.totalAllocatedBytes
+        for change in changes where change.change == .coverageGap {
+            if change.baselineLogical > 0, change.currentLogical == 0 {
+                logicalDelta += change.baselineLogical
+                if let allocated = change.baselineAllocated {
+                    allocatedDelta += allocated
+                }
+            } else if change.currentLogical > 0, change.baselineLogical == 0 {
+                logicalDelta -= change.currentLogical
+                if let allocated = change.currentAllocated {
+                    allocatedDelta -= allocated
+                }
+            }
+        }
+
         return SnapshotDiff(
             changes: changes,
-            logicalDelta: current.totalLogicalBytes - baseline.totalLogicalBytes,
-            allocatedDelta: current.totalAllocatedBytes - baseline.totalAllocatedBytes,
+            logicalDelta: logicalDelta,
+            allocatedDelta: allocatedDelta,
             addedCount: changes.filter { $0.change == .added }.count,
             removedCount: changes.filter { $0.change == .removed }.count,
             grownCount: changes.filter { $0.change == .grown }.count,
             shrunkCount: changes.filter { $0.change == .shrunk }.count,
             typeChangedCount: changes.filter { $0.change == .typeChanged }.count,
-            unchangedCount: changes.filter { $0.change == .unchanged }.count
+            unchangedCount: changes.filter { $0.change == .unchanged }.count,
+            coverageGapCount: changes.filter { $0.change == .coverageGap }.count
         )
     }
 
-    private static func makeChange(path: String, baseline: DirectoryEntry?, current: DirectoryEntry?) -> EntryChange? {
+    private static func makeChange(
+        path: String,
+        baseline: DirectoryEntry?,
+        current: DirectoryEntry?,
+        baselineIssues: [ScanIssue],
+        currentIssues: [ScanIssue]
+    ) -> EntryChange? {
         switch (baseline, current) {
         case let (old?, new?):
             let delta = new.logicalSize - old.logicalSize
@@ -144,6 +179,20 @@ public struct SnapshotDiff: Equatable, Sendable {
                 note: new.hardLinkNote ?? old.hardLinkNote
             )
         case let (old?, nil):
+            if ScanCoverage.preventsConfidentAbsence(of: path, issues: currentIssues) {
+                return EntryChange(
+                    relativePath: path,
+                    change: .coverageGap,
+                    baselineLogical: old.logicalSize,
+                    currentLogical: 0,
+                    logicalDelta: 0,
+                    baselineAllocated: old.allocatedSize,
+                    currentAllocated: nil,
+                    kind: old.kind,
+                    countsTowardTotal: old.countsTowardTotal,
+                    note: "当前扫描未覆盖该路径，不能视为已删除。"
+                )
+            }
             return EntryChange(
                 relativePath: path,
                 change: .removed,
@@ -157,6 +206,20 @@ public struct SnapshotDiff: Equatable, Sendable {
                 note: old.hardLinkNote
             )
         case let (nil, new?):
+            if ScanCoverage.preventsConfidentAbsence(of: path, issues: baselineIssues) {
+                return EntryChange(
+                    relativePath: path,
+                    change: .coverageGap,
+                    baselineLogical: 0,
+                    currentLogical: new.logicalSize,
+                    logicalDelta: 0,
+                    baselineAllocated: nil,
+                    currentAllocated: new.allocatedSize,
+                    kind: new.kind,
+                    countsTowardTotal: new.countsTowardTotal,
+                    note: "基线扫描未覆盖该路径，不能视为新增。"
+                )
+            }
             return EntryChange(
                 relativePath: path,
                 change: .added,
@@ -193,10 +256,20 @@ public struct ChildRollup: Equatable, Sendable, Identifiable {
         var baselineBytes: [String: Int64] = [:]
         var currentBytes: [String: Int64] = [:]
         for entry in baseline.entriesByPath.values where entry.countsTowardTotal {
-            baselineBytes[topChild(entry.relativePath), default: 0] += entry.logicalSize
+            let path = entry.relativePath
+            if current.entriesByPath[path] == nil,
+               ScanCoverage.preventsConfidentAbsence(of: path, issues: current.issues) {
+                continue
+            }
+            baselineBytes[topChild(path), default: 0] += entry.logicalSize
         }
         for entry in current.entriesByPath.values where entry.countsTowardTotal {
-            currentBytes[topChild(entry.relativePath), default: 0] += entry.logicalSize
+            let path = entry.relativePath
+            if baseline.entriesByPath[path] == nil,
+               ScanCoverage.preventsConfidentAbsence(of: path, issues: baseline.issues) {
+                continue
+            }
+            currentBytes[topChild(path), default: 0] += entry.logicalSize
         }
         let names = Set(baselineBytes.keys).union(currentBytes.keys)
         return names.map { name in

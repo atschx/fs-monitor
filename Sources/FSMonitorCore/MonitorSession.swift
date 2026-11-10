@@ -200,7 +200,7 @@ public struct MonitorSession: Equatable, Sendable {
         scanIssues = snapshot.issues
         if !snapshot.issues.isEmpty {
             statusMessage = (statusMessage ?? "")
-                + " 扫描已完成，但有 \(snapshot.issues.count) 条路径无法读取或未进入（部分路径结果）；合计不含这些路径。这与整次扫描失败不同。"
+                + " 扫描已完成，但有 \(snapshot.issues.count) 条路径无法读取或未进入（部分路径结果）；合计不含这些路径；差异中记为覆盖缺口，不作确定删除/新增。这与整次扫描失败不同。"
         }
         lastError = nil
         showingStaleAcceptedResults = false

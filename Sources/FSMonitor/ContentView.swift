@@ -48,7 +48,7 @@ struct ContentView: View {
             }
             if !session.scanIssues.isEmpty {
                 Banner(
-                    text: "扫描已完成，但有 \(session.scanIssues.count) 条路径无法读取或未进入（部分路径）。合计不含这些路径。详情在「限制与错误」。这与整次扫描失败不同。",
+                    text: "扫描已完成，但有 \(session.scanIssues.count) 条路径无法读取或未进入（部分路径）。合计不含这些路径；差异中记为覆盖缺口，不作确定删除/新增。详情在「限制与错误」。这与整次扫描失败不同。",
                     style: .warning
                 )
                 .padding(.horizontal, 16)
@@ -235,7 +235,7 @@ struct ContentView: View {
                 StatCard(title: "操作证据", value: "\(session.evidence.count) 条", caption: "无 PID")
             }
             if let diff = session.diff, let baseline = session.baseline, let current = session.current {
-                Text("新增 \(diff.addedCount)，删除 \(diff.removedCount)，变大 \(diff.grownCount)，变小 \(diff.shrunkCount)。常规文件路径 \(baseline.regularFileCount) → \(current.regularFileCount)。硬链接别名 \(current.hardLinkAliasCount)。各行相加可能大于合计，因为同一 inode 会在多条路径显示。")
+                Text(diffSummary(diff, baseline: baseline, current: current))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -466,6 +466,20 @@ struct ContentView: View {
         }
         .padding(32)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private func diffSummary(_ diff: SnapshotDiff, baseline: SpaceSnapshot, current: SpaceSnapshot) -> String {
+        var parts = [
+            "新增 \(diff.addedCount)",
+            "删除 \(diff.removedCount)",
+            "变大 \(diff.grownCount)",
+            "变小 \(diff.shrunkCount)"
+        ]
+        if diff.coverageGapCount > 0 {
+            parts.append("覆盖缺口 \(diff.coverageGapCount)（未覆盖路径不作确定删除/新增）")
+        }
+        return parts.joined(separator: "，")
+            + "。常规文件路径 \(baseline.regularFileCount) → \(current.regularFileCount)。硬链接别名 \(current.hardLinkAliasCount)。各行相加可能大于合计，因为同一 inode 会在多条路径显示。"
     }
 
     private func bytes(_ value: Int64?) -> String {
