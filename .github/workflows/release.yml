@@ -4,11 +4,16 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Pre-release tag (example: v0.1.0-test.1)"
+        description: "Unused prerelease git tag to create (example: v0.1.0-test.1). Must not already exist."
         required: true
         type: string
+      marketing_version:
+        description: "CFBundleShortVersionString / marketing version (example: 0.1.0). Separate from tag."
+        required: true
+        default: "0.1.0"
+        type: string
       publish:
-        description: "Create GitHub pre-release and upload zip (requires write access)"
+        description: "If true, create a NEW prerelease at the exact built commit. Refuses existing tag/assets; never clobbers."
         required: true
         default: false
         type: boolean
@@ -25,26 +30,50 @@ jobs:
     name: Package macOS .app
     runs-on: macos-15
     steps:
-      - name: Checkout
+      - name: Checkout exact ref
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.sha }}
 
-      - name: Show environment
+      - name: Show environment and bind commit
         run: |
           echo "runner=$(uname -m)"
+          echo "github_sha=${{ github.sha }}"
+          echo "resolved_sha=$(git rev-parse HEAD)"
+          test "$(git rev-parse HEAD)" = "${{ github.sha }}"
           sw_vers
           xcodebuild -version
           swift --version
 
+      - name: Refuse existing tag when publishing
+        if: ${{ inputs.publish }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          if git ls-remote --tags origin "refs/tags/$TAG" | grep -q .; then
+            echo "Refusing publish: tag $TAG already exists on origin." >&2
+            exit 1
+          fi
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Refusing publish: GitHub release $TAG already exists." >&2
+            exit 1
+          fi
+
       - name: Package .app
         env:
-          SHORT_VERSION: ${{ inputs.tag }}
+          MARKETING_VERSION: ${{ inputs.marketing_version }}
           BUILD_NUMBER: ${{ github.run_number }}
+          GIT_SHA: ${{ github.sha }}
           OUTPUT_DIR: ${{ github.workspace }}/dist
         run: |
           chmod +x scripts/package-macos-app.sh
           /usr/bin/time -l bash scripts/package-macos-app.sh
+          grep -q '^architectures=arm64$' dist/BUILD_INFO.txt
+          grep -q "^git_sha=${{ github.sha }}$" dist/BUILD_INFO.txt
+          grep -q "^marketing_version=${{ inputs.marketing_version }}$" dist/BUILD_INFO.txt
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
@@ -59,32 +88,45 @@ jobs:
           if-no-files-found: error
           retention-days: 30
 
-      - name: Create GitHub pre-release
+      - name: Create GitHub pre-release (no overwrite)
         if: ${{ inputs.publish }}
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ inputs.tag }}
+          MARKETING_VERSION: ${{ inputs.marketing_version }}
+          COMMIT_SHA: ${{ github.sha }}
         run: |
           set -euo pipefail
           test -f dist/FSMonitor.app.zip
           test -f dist/FSMonitor.app.sha256
+          if git ls-remote --tags origin "refs/tags/$TAG" | grep -q .; then
+            echo "Refusing: tag $TAG appeared before create." >&2
+            exit 1
+          fi
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Refusing: release $TAG appeared before create." >&2
+            exit 1
+          fi
           ARCHS=$(awk -F= '/^architectures=/{print $2}' dist/BUILD_INFO.txt)
           SIGNING=$(awk -F= '/^signing=/{print $2}' dist/BUILD_INFO.txt)
           NOTES=$(cat <<EOF
           ## FSMonitor 测试预发布
 
-          - 产物：可双击的 \`FSMonitor.app\`（zip）
-          - 架构：\`${ARCHS}\`（以 \`BUILD_INFO.txt\` / \`lipo\` 为准）
-          - 签名：\`${SIGNING}\`，**未**使用 Apple Developer ID，**未**公证
-          - 系统：macOS 13+
-          - 这是早期 demo，不能做 100% 物理 IO 归因
+          - **绑定提交**：\`${COMMIT_SHA}\`（tag 指向该 SHA，与打包一致）
+          - **Marketing version（Info.plist）**：\`${MARKETING_VERSION}\`（与 tag 字符串分离）
+          - **Prerelease tag**：\`${TAG}\`
+          - 产物：可双击的 \`FSMonitor.app\`（zip），**仅 arm64**
+          - 架构：\`${ARCHS}\`
+          - 最低系统：macOS 13.0（目标；**同包在真实 Mac 13 上的交互运行未在本流程验证**）
+          - 签名：\`${SIGNING}\`，**未** Developer ID，**未**公证；Gatekeeper/\`spctl\` 评估为拒绝（预期）
+          - 正式图标资产尚未交付
+          - 早期 demo：不能做 100% 物理 IO 归因
 
-          ### 首次打开（不关闭 Gatekeeper / SIP）
+          ### 首次打开（说明不保证各系统通用；不关闭系统保护）
 
           1. 下载 \`FSMonitor.app.zip\` 并解压
-          2. 将 \`FSMonitor.app\` 拖到「应用程序」或任意目录
-          3. 若系统提示无法验证开发者：选中 App → 右键「打开」→ 在对话框中确认打开
-          4. 不要关闭 Gatekeeper，不要关闭 SIP，不要执行全局绕过命令
+          2. 选中 App → 右键「打开」→ 确认打开
+          3. 不要关闭 Gatekeeper，不要关闭 SIP，不要执行全局绕过命令
 
           SHA256：
 
@@ -93,19 +135,15 @@ jobs:
           \`\`\`
           EOF
           )
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            echo "Release $TAG already exists; uploading assets."
-          else
-            gh release create "$TAG" \
-              --prerelease \
-              --title "FSMonitor $TAG (测试版)" \
-              --notes "$NOTES"
-          fi
-          gh release upload "$TAG" \
+          # Create tag + prerelease exactly at COMMIT_SHA. Do not upload with --clobber.
+          gh release create "$TAG" \
+            --target "$COMMIT_SHA" \
+            --prerelease \
+            --title "FSMonitor $TAG (测试版)" \
+            --notes "$NOTES" \
             dist/FSMonitor.app.zip \
             dist/FSMonitor.app.sha256 \
             dist/BUILD_INFO.txt \
             dist/codesign.txt \
-            dist/spctl.txt \
-            --clobber
-          gh release view "$TAG" --json url,isPrerelease,tagName,assets
+            dist/spctl.txt
+          gh release view "$TAG" --json url,isPrerelease,tagName,targetCommitish,assets

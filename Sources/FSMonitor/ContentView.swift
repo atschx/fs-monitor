@@ -30,9 +30,25 @@ struct ContentView: View {
                     .padding(.horizontal, 16)
                     .padding(.bottom, 8)
             }
+            if session.showingStaleAcceptedResults {
+                Banner(
+                    text: "摘要中的大小数字来自上一次成功采用的扫描（见基线/当前时刻），不是这次失败或取消的扫描。",
+                    style: .warning
+                )
+                .padding(.horizontal, 16)
+                .padding(.bottom, 8)
+            }
+            if session.isProcessSamplePending {
+                Banner(
+                    text: "全进程计数采样进行中。请等待结束后再开始/停止监控或扫描，以免重复操作叠在旧结果上。",
+                    style: .warning
+                )
+                .padding(.horizontal, 16)
+                .padding(.bottom, 8)
+            }
             if !session.scanIssues.isEmpty {
                 Banner(
-                    text: "有 \(session.scanIssues.count) 条路径无法读取或未进入。合计不含这些路径。详情在「限制与错误」。",
+                    text: "扫描已完成，但有 \(session.scanIssues.count) 条路径无法读取或未进入（部分路径）。合计不含这些路径。详情在「限制与错误」。这与整次扫描失败不同。",
                     style: .warning
                 )
                 .padding(.horizontal, 16)
@@ -68,7 +84,7 @@ struct ContentView: View {
     private var toolbar: some View {
         HStack(spacing: 8) {
             Button("选择目录") { selectFolder() }
-                .disabled(session.isScanning)
+                .disabled(session.isScanning || session.isProcessSamplePending)
             Button(session.baseline == nil ? "建立基线" : "重新建立基线") {
                 if session.baseline != nil && (session.isMonitoring || !session.evidence.isEmpty) {
                     confirmBaseline = true
@@ -79,6 +95,7 @@ struct ContentView: View {
             .disabled(!session.canEstablishBaseline)
             if session.isMonitoring {
                 Button("停止监控") { controller.stopMonitoring() }
+                    .disabled(!session.canStopMonitoring)
                     .tint(.red)
             } else {
                 Button("开始监控") { controller.startMonitoring() }
@@ -90,7 +107,11 @@ struct ContentView: View {
                 Button("取消扫描") { controller.cancelScan() }
             }
             Spacer()
-            if session.isMonitoring {
+            if session.isProcessSamplePending {
+                Label("采样中", systemImage: "clock")
+                    .font(.caption)
+                    .foregroundStyle(.orange)
+            } else if session.isMonitoring {
                 Label("监控中", systemImage: "circle.fill")
                     .font(.caption)
                     .foregroundStyle(.green)
@@ -199,8 +220,16 @@ struct ContentView: View {
                 Text(warning).font(.caption).foregroundStyle(.orange)
             }
             LazyVGrid(columns: [GridItem(.adaptive(minimum: 180), spacing: 12)], spacing: 12) {
-                StatCard(title: "基线逻辑大小", value: bytes(session.baseline?.totalLogicalBytes))
-                StatCard(title: "当前逻辑大小", value: bytes(session.current?.totalLogicalBytes))
+                StatCard(
+                    title: "基线逻辑大小",
+                    value: bytes(session.baseline?.totalLogicalBytes),
+                    caption: session.baseline.map { "扫描时刻 \(time($0.capturedAt))" }
+                )
+                StatCard(
+                    title: "当前逻辑大小",
+                    value: bytes(session.current?.totalLogicalBytes),
+                    caption: session.current.map { "扫描时刻 \(time($0.capturedAt))" }
+                )
                 StatCard(title: "逻辑增长", value: bytes(session.diff?.logicalDelta))
                 StatCard(title: "已分配块差值", value: bytes(session.diff?.allocatedDelta), caption: "不是独占物理空间")
                 StatCard(title: "操作证据", value: "\(session.evidence.count) 条", caption: "无 PID")

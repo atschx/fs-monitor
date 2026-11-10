@@ -55,7 +55,13 @@ final class MonitorController: ObservableObject {
             session = next
             return
         }
-        next.statusMessage = "正在采样全进程计数。这不是目录扫描，也不是此目录的 I/O。"
+        // Clear previous window process numbers so old timestamps are not read as this start.
+        next.processStart = nil
+        next.processLatest = nil
+        next.correlation = nil
+        next.beginProcessSampleWait(
+            message: "正在采样全进程计数（启动过渡）。这不是目录扫描，也不是此目录的 I/O。请等待结束后再操作。"
+        )
         session = next
         let token = UUID()
         monitorStartToken = token
@@ -64,6 +70,7 @@ final class MonitorController: ObservableObject {
             await MainActor.run {
                 guard self.monitorStartToken == token else { return }
                 guard self.session.baseline?.rootPath == root, !self.session.isMonitoring else { return }
+                guard self.session.isProcessSamplePending else { return }
                 self.activateMonitor(sample: sample, root: root)
             }
         }
@@ -73,7 +80,7 @@ final class MonitorController: ObservableObject {
         eventMonitor?.stop()
         eventMonitor = nil
         flushPending()
-        guard session.isMonitoring else {
+        guard session.isMonitoring, !session.isProcessSamplePending else {
             monitorStartToken = UUID()
             return
         }
@@ -87,6 +94,7 @@ final class MonitorController: ObservableObject {
             await MainActor.run {
                 guard self.monitorStartToken == token else { return }
                 guard !self.session.isMonitoring else { return }
+                guard self.session.isProcessSamplePending else { return }
                 var updated = self.session
                 updated.stopMonitoring(processSample: sample)
                 self.session = updated
@@ -107,7 +115,9 @@ final class MonitorController: ObservableObject {
             }
         } catch {
             var next = session
-            next.noteFailure(error.localizedDescription)
+            next.cancelProcessSampleWait(
+                message: "无法启动 FSEvents：\(error.localizedDescription) 监控未开始；先前窗口的进程差值已清空，避免误读旧时间。"
+            )
             session = next
             return
         }
@@ -242,6 +252,11 @@ final class MonitorController: ObservableObject {
         eventMonitor = nil
         monitorStartToken = UUID()
         flushPending()
+        if session.isProcessSamplePending {
+            var next = session
+            next.isProcessSamplePending = false
+            session = next
+        }
     }
 
     private func releaseSecurityScope() {

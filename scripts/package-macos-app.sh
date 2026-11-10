@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Build a double-clickable macOS .app from the SwiftPM FSMonitor product.
-# Intended to run on macOS with Xcode/Swift. Does not notarize or Developer ID sign.
+# Intended for Apple Silicon macOS with Xcode/Swift. Does not notarize or Developer ID sign.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -13,9 +13,18 @@ MIN_SYSTEM="13.0"
 CONFIGURATION="${CONFIGURATION:-release}"
 OUTPUT_DIR="${OUTPUT_DIR:-"$ROOT/dist"}"
 BUILD_DIR="${BUILD_DIR:-"$ROOT/.build"}"
+# Marketing version for Info.plist (CFBundleShortVersionString). Must NOT be a git tag string.
+MARKETING_VERSION="${MARKETING_VERSION:-0.1.0}"
+BUILD_NUMBER="${BUILD_NUMBER:-$(git -C "$ROOT" rev-parse --short HEAD 2>/dev/null || echo 0)}"
+GIT_SHA="${GIT_SHA:-$(git -C "$ROOT" rev-parse HEAD 2>/dev/null || echo unknown)}"
 
 if [[ "$(uname -s)" != "Darwin" ]]; then
   echo "package-macos-app.sh must run on macOS." >&2
+  exit 1
+fi
+
+if [[ ! "$MARKETING_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
+  echo "MARKETING_VERSION must look like 0.1.0 (got: $MARKETING_VERSION)" >&2
   exit 1
 fi
 
@@ -25,15 +34,23 @@ xcodebuild -version
 swift --version
 uname -m
 
+MACHINE="$(uname -m)"
+if [[ "$MACHINE" != "arm64" ]]; then
+  echo "This packaging path only supports Apple Silicon (arm64). Runner is: $MACHINE" >&2
+  exit 1
+fi
+
 echo "==> Test"
 swift test --parallel
 
-echo "==> Build $CONFIGURATION product $PRODUCT_NAME"
-swift build -c "$CONFIGURATION" --product "$PRODUCT_NAME"
+echo "==> Build $CONFIGURATION product $PRODUCT_NAME (arm64)"
+swift build -c "$CONFIGURATION" --product "$PRODUCT_NAME" --arch arm64
 
-BIN="$BUILD_DIR/$CONFIGURATION/$PRODUCT_NAME"
+BIN="$BUILD_DIR/arm64-apple-macosx/$CONFIGURATION/$PRODUCT_NAME"
 if [[ ! -x "$BIN" ]]; then
-  # SwiftPM may place binaries under a triple subdirectory.
+  BIN="$BUILD_DIR/$CONFIGURATION/$PRODUCT_NAME"
+fi
+if [[ ! -x "$BIN" ]]; then
   BIN="$(find "$BUILD_DIR" -type f -path "*/$CONFIGURATION/$PRODUCT_NAME" -perm -111 | head -n 1 || true)"
 fi
 if [[ -z "${BIN}" || ! -x "$BIN" ]]; then
@@ -43,11 +60,12 @@ fi
 
 echo "Binary: $BIN"
 file "$BIN"
-lipo -archs "$BIN" || true
-
-VERSION="$(git -C "$ROOT" describe --tags --always --dirty 2>/dev/null || echo "untagged")"
-SHORT_VERSION="${SHORT_VERSION:-0.1.0-test}"
-BUILD_NUMBER="${BUILD_NUMBER:-$(git -C "$ROOT" rev-parse --short HEAD 2>/dev/null || echo 0)}"
+ARCHS="$(lipo -archs "$BIN" 2>/dev/null || true)"
+echo "lipo archs: $ARCHS"
+if [[ "$ARCHS" != "arm64" ]]; then
+  echo "Refusing to package non-arm64-only binary (got: '$ARCHS')." >&2
+  exit 1
+fi
 
 APP_ROOT="$OUTPUT_DIR/$APP_NAME.app"
 rm -rf "$APP_ROOT" "$OUTPUT_DIR/${APP_NAME}.app.zip" "$OUTPUT_DIR/${APP_NAME}.app.sha256"
@@ -73,7 +91,7 @@ cat > "$APP_ROOT/Contents/Info.plist" <<PLIST
   <key>CFBundlePackageType</key>
   <string>APPL</string>
   <key>CFBundleShortVersionString</key>
-  <string>${SHORT_VERSION}</string>
+  <string>${MARKETING_VERSION}</string>
   <key>CFBundleVersion</key>
   <string>${BUILD_NUMBER}</string>
   <key>LSMinimumSystemVersion</key>
@@ -99,21 +117,24 @@ codesign --verify --verbose=2 "$APP_ROOT"
 codesign -dv --verbose=4 "$APP_ROOT" 2>&1 | tee "$OUTPUT_DIR/codesign.txt" || true
 spctl --assess --type execute -v "$APP_ROOT" 2>&1 | tee "$OUTPUT_DIR/spctl.txt" || true
 
-ARCHS="$(lipo -archs "$APP_ROOT/Contents/MacOS/$PRODUCT_NAME" 2>/dev/null || echo unknown)"
 cat > "$OUTPUT_DIR/BUILD_INFO.txt" <<INFO
 product=$APP_NAME.app
 bundle_id=$BUNDLE_ID
-short_version=$SHORT_VERSION
+marketing_version=$MARKETING_VERSION
+cfbundle_short_version_string=$MARKETING_VERSION
 build_number=$BUILD_NUMBER
-git_describe=$VERSION
-architectures=$ARCHS
+git_sha=$GIT_SHA
+architectures=arm64
 min_system=$MIN_SYSTEM
 signing=ad-hoc
 notarized=no
 developer_id=no
-runner_machine=$(uname -m)
+spctl_assess=rejected_expected_for_adhoc
+icon=none_official_asset_pending
+runner_machine=$MACHINE
 swift=$(swift --version 2>&1 | head -n 1)
 built_at_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+real_mac_interaction_verified=no
 INFO
 
 echo "==> Zip"

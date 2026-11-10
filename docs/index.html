@@ -25,13 +25,13 @@
       <a class="cta secondary" href="guide.html">使用指南</a>
       <a class="cta secondary" href="https://github.com/atschx/fs-monitor">源码</a>
     </div>
-    <p class="status-chip">早期 demo · 仅 macOS · Releases 以实际页面为准 · 测试包多为 ad-hoc 签名</p>
+    <p class="status-chip">测试版 · 仅 Apple Silicon (arm64) · ad-hoc 未公证 · 同包实机交互未验证 · 正式图标待交付</p>
   </header>
 
   <main>
     <section aria-labelledby="can-title">
       <h2 id="can-title">当前能做什么</h2>
-      <p class="section-lede">与仓库 README 一致，只写已经实现的能力。</p>
+      <p class="section-lede">与仓库 README 一致，只写已经实现的能力。细节见使用指南。</p>
       <ul class="plain-list">
         <li>扫描所选目录的逻辑大小与（可读时的）分配块，建立基线后再扫描做差分。</li>
         <li>监控窗口记录 FSEvents 路径、标志与时间；事件没有 PID。</li>
@@ -44,9 +44,8 @@
       <h2 id="cannot-title">做不到什么</h2>
       <p class="section-lede">这些限制写在应用界面里，本页也不淡化。</p>
       <ul class="plain-list">
-        <li>不能指出是哪个进程写入了该目录。</li>
-        <li>全进程计数不是目标目录 I/O；时间接近不是因果。</li>
-        <li>不能做 100% 物理 IO 归因。</li>
+        <li>不能指出是哪个进程写入了该目录；全进程计数不是目标目录 I/O。</li>
+        <li>时间接近不是因果；不能做 100% 物理 IO 归因。</li>
         <li>不是现状：持久化回溯、整盘 IO 仪表盘、复制/暂停归因、正式公证签名版。</li>
       </ul>
     </section>
@@ -55,16 +54,13 @@
       <h2 id="get-title">如何获取</h2>
       <p class="section-lede">优先下载可双击的 <code>FSMonitor.app</code>；没有安装包时再源码构建。</p>
       <ul class="plain-list">
-        <li><a href="https://github.com/atschx/fs-monitor/releases">GitHub Releases</a>：有预发布时提供 <code>FSMonitor.app.zip</code> 与 SHA256；若列表为空，表示当前尚无可下载发行物。</li>
-        <li>CI 工件：macOS 工作流上传的 <code>FSMonitor-macos-app</code>（需登录 GitHub）。</li>
-        <li>源码：<code>swift test</code> 后 <code>./scripts/package-macos-app.sh</code>（须在 Mac 上）。</li>
+        <li><a href="https://github.com/atschx/fs-monitor/releases">GitHub Releases</a>：以实际页面为准；列表为空表示尚无可下载发行物。</li>
+        <li>CI 工件：macOS 工作流上传的 <code>FSMonitor-macos-app</code>（需登录）。</li>
+        <li>目标：macOS 13+，<strong>仅 arm64</strong>。CI 在 macos-15 arm64 打包通过 ≠ 同包已在真实 Mac 13 上完成交互验收。</li>
+        <li>签名：ad-hoc；Gatekeeper/<code>spctl</code> 评估拒绝（预期）。首次打开说明不保证各系统通用；不要关闭系统保护。</li>
+        <li>正式图标资产尚未由 Nova 交付；本页与测试包不使用未批准候选图。</li>
       </ul>
-      <p class="note">测试版多为 ad-hoc 签名：右键「打开」即可。不要关闭 Gatekeeper 或 SIP。</p>
-    </section>
-
-    <section aria-labelledby="req-title">
-      <h2 id="req-title">要求</h2>
-      <p class="section-lede">只支持 macOS 13+。架构以发布物中的 <code>BUILD_INFO.txt</code> 为准（CI 在 <code>macos-15</code> 打包时通常为 arm64）。</p>
+      <p class="note">更多步骤见 <a href="guide.html">使用指南</a>。</p>
     </section>
   </main>
 

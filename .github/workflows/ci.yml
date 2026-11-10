@@ -43,12 +43,15 @@ jobs:
 
       - name: Package .app (includes swift test + release build)
         env:
-          SHORT_VERSION: "0.1.0-test"
+          MARKETING_VERSION: "0.1.0"
           BUILD_NUMBER: ${{ github.run_number }}
+          GIT_SHA: ${{ github.sha }}
           OUTPUT_DIR: ${{ github.workspace }}/dist
         run: |
           chmod +x scripts/package-macos-app.sh
           /usr/bin/time -l bash scripts/package-macos-app.sh
+          grep -q '^architectures=arm64$' dist/BUILD_INFO.txt
+          grep -q '^marketing_version=0.1.0$' dist/BUILD_INFO.txt
 
       - name: Upload macOS app artifact
         uses: actions/upload-artifact@v4

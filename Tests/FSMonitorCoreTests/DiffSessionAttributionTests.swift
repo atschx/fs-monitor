@@ -72,7 +72,55 @@ final class DiffSessionAttributionTests: XCTestCase {
         XCTAssertEqual(session.baseline?.totalLogicalBytes, before)
         XCTAssertEqual(session.current?.totalLogicalBytes, before)
         XCTAssertTrue(session.lastError?.contains("取消") == true)
+        XCTAssertTrue(session.showingStaleAcceptedResults)
         XCTAssertFalse(session.isScanning)
+    }
+
+    func testProcessSamplePendingBlocksOverlappingActions() {
+        var session = MonitorSession()
+        _ = session.selectDirectory(path: "/tmp/example-selected-only")
+        let emptyBaseline = SpaceSnapshot(
+            selectedPath: "/tmp/example-selected-only",
+            rootPath: "/tmp/example-selected-only",
+            rootResolutionNote: nil,
+            breadthWarning: nil,
+            capturedAt: fixedDate(1),
+            entriesByPath: [:],
+            issues: [],
+            completed: true,
+            cancelled: false,
+            failureReason: nil,
+            totalLogicalBytes: 0,
+            totalAllocatedBytes: 0,
+            regularFileCount: 0,
+            directoryCount: 1,
+            symbolicLinkCount: 0,
+            hardLinkAliasCount: 0
+        )
+        XCTAssertTrue(session.prepareScan(.baseline).accepted)
+        XCTAssertTrue(session.finishScan(emptyBaseline, purpose: .baseline).accepted)
+        XCTAssertTrue(session.canStartMonitoring)
+
+        session.beginProcessSampleWait(message: "采样中")
+        XCTAssertTrue(session.isProcessSamplePending)
+        XCTAssertFalse(session.canStartMonitoring)
+        XCTAssertFalse(session.canEstablishBaseline)
+        XCTAssertFalse(session.canRescan)
+        XCTAssertFalse(session.validateStartMonitoring().accepted)
+        XCTAssertFalse(session.prepareScan(.rescan).accepted)
+
+        session.beginMonitoring(processSample: sample([], at: 2, listError: nil))
+        XCTAssertFalse(session.isProcessSamplePending)
+        XCTAssertTrue(session.isMonitoring)
+        XCTAssertTrue(session.canStopMonitoring)
+
+        session.markMonitoringStoppedAwaitingSample()
+        XCTAssertTrue(session.isProcessSamplePending)
+        XCTAssertFalse(session.canStartMonitoring)
+        XCTAssertFalse(session.canStopMonitoring)
+        session.stopMonitoring(processSample: sample([], at: 3, listError: nil))
+        XCTAssertFalse(session.isProcessSamplePending)
+        XCTAssertTrue(session.canStartMonitoring)
     }
 
     func testStaleFinishDoesNotMutateNewSelection() throws {
