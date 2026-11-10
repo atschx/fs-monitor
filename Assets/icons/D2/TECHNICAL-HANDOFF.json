@@ -1,0 +1,44 @@
+[
+  {
+    "file": "fs-monitor-icon-D2-1024.png",
+    "size": 1024,
+    "mode": "RGBA",
+    "sha256": "010b92869cb37f4f187aabe127cd0900d25132a0b400d27dc8c7a777ac5085d4"
+  },
+  {
+    "file": "fs-monitor-icon-D2-512.png",
+    "size": 512,
+    "mode": "RGBA",
+    "sha256": "58febe7e333b01306d1fe93aaee62683da8cae2b770bd6420c98a652b3ac90f2"
+  },
+  {
+    "file": "fs-monitor-icon-D2-256.png",
+    "size": 256,
+    "mode": "RGBA",
+    "sha256": "32a0a0be46b6f170172cb418964015f379a254511e03ab1e4bcce802b3ffb63c"
+  },
+  {
+    "file": "fs-monitor-icon-D2-128.png",
+    "size": 128,
+    "mode": "RGBA",
+    "sha256": "5711dbc2133909e9a5cc0b913bd7fb07b3d1611c2331e5a060d5e18a4ca44f44"
+  },
+  {
+    "file": "fs-monitor-icon-D2-64.png",
+    "size": 64,
+    "mode": "RGBA",
+    "sha256": "2330c6b22a66b1a76857f39d4efd6253ac9a0bd191ea55d10b14631117605f1d"
+  },
+  {
+    "file": "fs-monitor-icon-D2-32.png",
+    "size": 32,
+    "mode": "RGBA",
+    "sha256": "61185ead5784a5d1f1e5057e2acb5a7081fde31d5c3f4843e58d20fbe1c7297b"
+  },
+  {
+    "file": "fs-monitor-icon-D2-16.png",
+    "size": 16,
+    "mode": "RGBA",
+    "sha256": "319350e85ab4aa7316eee3e34f6ba83b8fed10a322f6ba2d8a5cbd779c358077"
+  }
+]

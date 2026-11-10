@@ -71,6 +71,41 @@ APP_ROOT="$OUTPUT_DIR/$APP_NAME.app"
 rm -rf "$APP_ROOT" "$OUTPUT_DIR/${APP_NAME}.app.zip" "$OUTPUT_DIR/${APP_NAME}.app.sha256"
 mkdir -p "$APP_ROOT/Contents/MacOS" "$APP_ROOT/Contents/Resources"
 
+ICONSET="$ROOT/Resources/AppIcon.iconset"
+ICNS_OUT="$OUTPUT_DIR/AppIcon.icns"
+if [[ ! -d "$ICONSET" ]]; then
+  echo "Missing $ICONSET (D2 iconset)." >&2
+  exit 1
+fi
+echo "==> Build AppIcon.icns from verified D2 iconset"
+# Require the standard macOS iconset names before iconutil.
+for required in \
+  icon_16x16.png diana.k@example.org \
+  icon_32x32.png ivan.p@example.net \
+  icon_128x128.png wendy.h@example.net \
+  icon_256x256.png wendy.h@example.net \
+  icon_512x512.png walt.e@example.net
+do
+  test -f "$ICONSET/$required" || { echo "Missing iconset entry: $required" >&2; exit 1; }
+done
+# Re-check source asset hashes against handoff when present.
+if [[ -f "$ROOT/Assets/icons/D2/TECHNICAL-HANDOFF.json" ]]; then
+  python3 - <<'PY'
+import hashlib, json
+from pathlib import Path
+root = Path("Assets/icons/D2")
+hand = json.loads((root / "TECHNICAL-HANDOFF.json").read_text())
+for entry in hand:
+    path = root / entry["file"]
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()
+    if digest != entry["sha256"].lower():
+        raise SystemExit(f"D2 hash mismatch for {entry['file']}: {digest}")
+print("D2 asset hashes OK")
+PY
+fi
+iconutil -c icns "$ICONSET" -o "$ICNS_OUT"
+test -f "$ICNS_OUT"
+
 cat > "$APP_ROOT/Contents/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -90,6 +125,8 @@ cat > "$APP_ROOT/Contents/Info.plist" <<PLIST
   <string>FSMonitor</string>
   <key>CFBundlePackageType</key>
   <string>APPL</string>
+  <key>CFBundleIconFile</key>
+  <string>AppIcon</string>
   <key>CFBundleShortVersionString</key>
   <string>${MARKETING_VERSION}</string>
   <key>CFBundleVersion</key>
@@ -110,6 +147,7 @@ PLIST
 
 cp "$BIN" "$APP_ROOT/Contents/MacOS/$PRODUCT_NAME"
 chmod +x "$APP_ROOT/Contents/MacOS/$PRODUCT_NAME"
+cp "$ICNS_OUT" "$APP_ROOT/Contents/Resources/AppIcon.icns"
 
 echo "==> Ad-hoc codesign (not Developer ID, not notarized)"
 codesign --force --deep --sign - --timestamp=none "$APP_ROOT"
@@ -130,7 +168,8 @@ signing=ad-hoc
 notarized=no
 developer_id=no
 spctl_assess=rejected_expected_for_adhoc
-icon=none_official_asset_pending
+icon=D2_huluwa_nova_selected
+icon_notes=16_32_eye_detail_weak;large_size_forward_bias;not_dock_validated;no_menubar_autohide_animation
 runner_machine=$MACHINE
 swift=$(swift --version 2>&1 | head -n 1)
 built_at_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)

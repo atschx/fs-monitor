@@ -52,6 +52,10 @@ jobs:
           /usr/bin/time -l bash scripts/package-macos-app.sh
           grep -q '^architectures=arm64$' dist/BUILD_INFO.txt
           grep -q '^marketing_version=0.1.0$' dist/BUILD_INFO.txt
+          grep -q '^icon=D2_huluwa_nova_selected$' dist/BUILD_INFO.txt
+          test -f dist/FSMonitor.app/Contents/Resources/AppIcon.icns
+          # unzipped layout check for icon presence after packaging leaves dist/FSMonitor.app
+          plutil -extract CFBundleIconFile raw dist/FSMonitor.app/Contents/Info.plist | grep -q AppIcon
 
       - name: Upload macOS app artifact
         uses: actions/upload-artifact@v4
