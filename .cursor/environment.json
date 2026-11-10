@@ -1,0 +1,8 @@
+{
+  "name": "fs-monitor",
+  "user": "ubuntu",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "install": "bash .cursor/install.sh"
+}
