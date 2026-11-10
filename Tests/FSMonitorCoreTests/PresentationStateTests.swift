@@ -168,6 +168,99 @@ final class PresentationStateTests: XCTestCase {
         XCTAssertTrue(SessionPresentation.exitRetentionFact.contains("不保留"))
     }
 
+    func testConfirmationCopyMatchesNovaAddendum1134Verbatim() {
+        XCTAssertEqual(SessionPresentation.changeDirectoryConfirmTitle, "更换监控目录？")
+        XCTAssertEqual(
+            SessionPresentation.changeDirectoryConfirmMessage,
+            "更换后将停止当前监控、取消扫描，并清除本次会话中的基线、对照结果、操作证据和进程读写采样。不会删除磁盘文件。"
+        )
+        XCTAssertEqual(SessionPresentation.changeDirectoryConfirmAction, "更换目录")
+
+        XCTAssertEqual(SessionPresentation.rebuildBaselineConfirmTitle, "重建基线？")
+        XCTAssertEqual(
+            SessionPresentation.rebuildBaselineConfirmMessage,
+            "扫描成功后将替换现有基线和对照结果，并清空本次已记录的操作证据。扫描失败或取消会保留旧结果；正在运行的监控不会因此停止。"
+        )
+        XCTAssertEqual(SessionPresentation.rebuildBaselineConfirmAction, "重建基线")
+    }
+
+    func testRebuildConfirmsForAnyValidBaselineNotOnlyMonitoringOrEvidence() {
+        var session = MonitorSession()
+        XCTAssertFalse(SessionPresentation.shouldConfirmRebuildBaseline(for: session))
+
+        _ = session.selectDirectory(path: "/tmp/example")
+        XCTAssertFalse(SessionPresentation.shouldConfirmRebuildBaseline(for: session))
+
+        _ = session.prepareScan(.baseline)
+        XCTAssertTrue(session.finishScan(emptySnapshot(completed: true), purpose: .baseline).accepted)
+        XCTAssertTrue(session.evidence.isEmpty)
+        XCTAssertFalse(session.isMonitoring)
+        // Idle valid baseline must still confirm — Nova 11:34.
+        XCTAssertTrue(SessionPresentation.shouldConfirmRebuildBaseline(for: session))
+    }
+
+    func testPartialCoverageSummaryLabelsDoNotInviteSubtractingTotals() {
+        let full = SessionPresentation.summaryCardCopy(partialCoverage: false)
+        XCTAssertEqual(full.baselineTitle, "基线逻辑大小")
+        XCTAssertEqual(full.currentTitle, "当前逻辑大小")
+        XCTAssertEqual(full.deltaTitle, "逻辑增长")
+
+        let partial = SessionPresentation.summaryCardCopy(partialCoverage: true)
+        XCTAssertEqual(partial.baselineTitle, "基线扫描合计")
+        XCTAssertEqual(partial.currentTitle, "当前可读合计")
+        XCTAssertEqual(partial.deltaTitle, "可比较逻辑变化")
+        XCTAssertTrue(partial.baselineCaptionHint.contains("不可直接相减"))
+        XCTAssertTrue(partial.currentCaptionHint.contains("不可与基线合计直接相减"))
+        XCTAssertTrue(partial.deltaCaptionHint.contains("未知项不计入确定增删"))
+        // Example art numbers must never be hardcoded into presentation helpers.
+        XCTAssertFalse(partial.baselineTitle.contains("1240"))
+        XCTAssertFalse(partial.currentTitle.contains("1334"))
+        XCTAssertFalse(partial.deltaTitle.contains("174"))
+
+        XCTAssertFalse(
+            SessionPresentation.usesPartialCoverageSummaryLabels(diff: nil, scanIssues: [])
+        )
+        let issue = ScanIssue(path: "secret", message: "无法读取")
+        XCTAssertTrue(
+            SessionPresentation.usesPartialCoverageSummaryLabels(diff: nil, scanIssues: [issue])
+        )
+        let gapDiff = SnapshotDiff(
+            changes: [],
+            logicalDelta: 0,
+            allocatedDelta: 0,
+            addedCount: 0,
+            removedCount: 0,
+            grownCount: 0,
+            shrunkCount: 0,
+            typeChangedCount: 0,
+            unchangedCount: 0,
+            coverageGapCount: 2
+        )
+        XCTAssertTrue(
+            SessionPresentation.usesPartialCoverageSummaryLabels(diff: gapDiff, scanIssues: [])
+        )
+        XCTAssertEqual(EntryChangeKind.coverageGap.label, "覆盖缺口（未知，不可判断）")
+    }
+
+    func testCancelOrFailKeepsOldResultsAndDoesNotStopMonitoringFlag() {
+        var session = MonitorSession()
+        _ = session.selectDirectory(path: "/tmp/example")
+        _ = session.prepareScan(.baseline)
+        let baseline = emptySnapshot(completed: true, capturedAt: fixedDate(10))
+        XCTAssertTrue(session.finishScan(baseline, purpose: .baseline).accepted)
+        session.beginMonitoring(processSample: sample([], at: 1))
+        XCTAssertTrue(session.isMonitoring)
+
+        _ = session.prepareScan(.rescan)
+        let failed = emptySnapshot(completed: false, cancelled: false, capturedAt: fixedDate(99))
+        let result = session.finishScan(failed, purpose: .rescan)
+        XCTAssertFalse(result.accepted)
+        XCTAssertEqual(session.baseline?.capturedAt, baseline.capturedAt)
+        XCTAssertTrue(session.showingStaleAcceptedResults)
+        // Rebuild/rescan failure must not auto-stop monitoring.
+        XCTAssertTrue(session.isMonitoring)
+    }
+
     private func emptySnapshot(
         completed: Bool,
         cancelled: Bool = false,

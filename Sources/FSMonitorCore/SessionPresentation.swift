@@ -23,6 +23,32 @@ public struct DualTaskStatus: Equatable, Sendable {
     }
 }
 
+/// Summary card titles/captions — partial coverage uses Nova v12-addendum-1134 labels.
+public struct SummaryCardCopy: Equatable, Sendable {
+    public var baselineTitle: String
+    public var baselineCaptionHint: String
+    public var currentTitle: String
+    public var currentCaptionHint: String
+    public var deltaTitle: String
+    public var deltaCaptionHint: String
+
+    public init(
+        baselineTitle: String,
+        baselineCaptionHint: String,
+        currentTitle: String,
+        currentCaptionHint: String,
+        deltaTitle: String,
+        deltaCaptionHint: String
+    ) {
+        self.baselineTitle = baselineTitle
+        self.baselineCaptionHint = baselineCaptionHint
+        self.currentTitle = currentTitle
+        self.currentCaptionHint = currentCaptionHint
+        self.deltaTitle = deltaTitle
+        self.deltaCaptionHint = deltaCaptionHint
+    }
+}
+
 public enum SessionPresentation {
     /// At most one emphasized next step (spec presentation-v12).
     public static func primaryAction(for session: MonitorSession) -> PrimaryAction {
@@ -88,6 +114,57 @@ public enum SessionPresentation {
             monitoringLine: monitoring,
             scanningLine: scanning,
             combinedSummary: parts.joined(separator: " · ")
+        )
+    }
+
+    // MARK: - Confirmations (Nova v12-addendum-1134 verbatim)
+
+    public static let changeDirectoryConfirmTitle = "更换监控目录？"
+    public static let changeDirectoryConfirmMessage =
+        "更换后将停止当前监控、取消扫描，并清除本次会话中的基线、对照结果、操作证据和进程读写采样。不会删除磁盘文件。"
+    public static let changeDirectoryConfirmAction = "更换目录"
+
+    public static let rebuildBaselineConfirmTitle = "重建基线？"
+    public static let rebuildBaselineConfirmMessage =
+        "扫描成功后将替换现有基线和对照结果，并清空本次已记录的操作证据。扫描失败或取消会保留旧结果；正在运行的监控不会因此停止。"
+    public static let rebuildBaselineConfirmAction = "重建基线"
+
+    /// Rebuild confirms whenever a valid baseline exists. First establish never confirms.
+    public static func shouldConfirmRebuildBaseline(for session: MonitorSession) -> Bool {
+        session.baseline != nil
+    }
+
+    // MARK: - Partial-coverage summary labels
+
+    /// Partial coverage when the accepted diff has coverage gaps or the session still lists scan issues.
+    public static func usesPartialCoverageSummaryLabels(
+        diff: SnapshotDiff?,
+        scanIssues: [ScanIssue]
+    ) -> Bool {
+        if let diff, diff.coverageGapCount > 0 {
+            return true
+        }
+        return !scanIssues.isEmpty
+    }
+
+    public static func summaryCardCopy(partialCoverage: Bool) -> SummaryCardCopy {
+        if partialCoverage {
+            return SummaryCardCopy(
+                baselineTitle: "基线扫描合计",
+                baselineCaptionHint: "基线范围；与当前可读不是同一范围，不可直接相减",
+                currentTitle: "当前可读合计",
+                currentCaptionHint: "可读范围；不可与基线合计直接相减",
+                deltaTitle: "可比较逻辑变化",
+                deltaCaptionHint: "仅比较两次均可读取的项目，未知项不计入确定增删"
+            )
+        }
+        return SummaryCardCopy(
+            baselineTitle: "基线逻辑大小",
+            baselineCaptionHint: "目录基线",
+            currentTitle: "当前逻辑大小",
+            currentCaptionHint: "目录结果",
+            deltaTitle: "逻辑增长",
+            deltaCaptionHint: "相对基线"
         )
     }
 

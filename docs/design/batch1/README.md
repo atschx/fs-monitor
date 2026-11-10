@@ -1,53 +1,61 @@
-# UI 第一批交接（v0.1.1-beta.1）
+# UI 交接（v0.1.1-beta.1 · Huluwa v2.2）
 
-本目录保存 Huluwa 首批可实施稿与本分支承接说明。**设计示意 ≠ 已发布；示例数字不可硬编码。**
+本目录保存首批可实施稿与本分支承接说明。**设计示意 ≠ 已发布；示例数字（如 1240 / 1334 / +174）不可硬编码。**
 
-## 资产
+内部规格快照与完整 30 页评审 PDF **不写入公开仓库**；本 README 只记工程承接要点。
+
+## 资产（首批已入库）
 
 | 文件 | 说明 |
 | --- | --- |
 | `main-monitoring-light.png` | 监控中主窗 · 浅色 |
-| `main-monitoring-dark.png` | 监控中主窗 · 深色 |
+| `main-monitoring-dark.png` | 监控中主窗 · 深色代表 |
 | `components.png` | 组件样式与尺寸板 |
-| `fs-monitor-ui-handoff-v2_1f59.pdf` | PDF 交接 |
+| `fs-monitor-ui-handoff-v2_1f59.pdf` | 首批 PDF（已被 Huluwa **v2.2 / 30 页** 评审稿替代为输入；新稿不入库） |
 
-## 设计原则（Albert 11:18）
+## 设计原则（Albert）
 
-**原生 macOS 视觉/UI 优先**，再适度叠加 D2 主题色。原生控件、层级、状态语义、浅深色与可访问性优先；**不为暖色/青蓝全面自绘**，不用图标风格压过原生体验。D2 延续保留为辅（主操作 tint），具体色板微调等 Huluwa/Nova 同一交接。
+**原生 macOS 视觉/UI 优先**，再适度叠加 D2 主题色。原生控件、层级、状态语义、浅深色与可访问性优先；**不为暖色/青蓝全面自绘**。D2 暖色 `#9C4F39` 仅作当前态主操作 tint。
 
-## 本批已落地（代码）
+## 本批已落地（代码，PR4）
 
-- 系统 `windowBackground` / `controlBackground`；语义 `.primary` / `.secondary` / 系统绿红橙
-- 原生 `.bordered` / `.borderedProminent`；主操作文案 **「复扫查看变化」** + D2 暖色 **tint**（非自绘按钮）
-- 原生 segmented `Picker` 承载五 Tab 与排序；五摘要卡用系统卡片底，非全盘自定义色板
-- 次级「停止监控」；既有状态条（失败/陈旧结果/采样中/覆盖缺口）保留
-- 独立「取消扫描」与停止监控并存（既有能力，未改机制）
-- 窗口：`WindowGroup.defaultSize(1120×760)` 仅为打开时建议尺寸；**无** `minWidth`/`minHeight` 硬下限（已移除本轮曾误加的 720×480；组件板 1368×872 亦非硬限制）
-- 字体：系统动态字体样式（headline/caption/…）；卡片数值 `monospacedDigit`
-- 包内默认 `marketing_version=0.1.1`；目标 Release/tag 约定 **`v0.1.1-beta.1`**（本批不自动发布）
+- 系统 `windowBackground` / `controlBackground`；原生 `.bordered` / `.borderedProminent` + 状态表主操作
+- 五摘要 / 五 Tab / 「复扫查看变化」；取消扫描 ≠ 停止监控
+- 双任务文案：静态「监控：未运行」；停止即时反馈可「已停止监控，扫描仍在继续」
+- **确认框（Nova 11:34 逐字）**：更换监控目录？ / 重建基线？；默认取消；有有效基线即确认重建；首次建立不弹
+- **部分覆盖三卡标签**：基线扫描合计 / 当前可读合计 / 可比较逻辑变化；脚注禁止两总量直接相减；未知不作确定增删
+- 「限制与错误」如实写退出无持久化；扫描失败/取消保旧结果，监控不自动停止
+- 窗口：`defaultSize(1120×760)`；无硬 `minWidth`/`minHeight`
+- 包内默认 `marketing_version=0.1.1`；目标 tag **`v0.1.1-beta.1`**（本批不自动发布）
 
-## Nova 目视
+## Huluwa v2.2 · 30 页源码映射（摘要）
 
-Nova 已目视三图通过本批「监控中」逻辑方向；**不等于全量验收**。
+| 页 | 态 | 源码承接 |
+| --- | --- | --- |
+| 01–03 | 目录/缩略/组件板 | 参考；非运行窗 |
+| 04–05 | F1 未选目录（05 深色代表） | `ContentView` 空态「选择要查看的目录」 |
+| 06 | F2 已选无基线 | 空态「目录已选中，尚未读取」；主操作建立基线 |
+| 07 | F2 首次建基线扫描 | `scanningState`「正在建立基线…」+ 取消 |
+| 08 | F2 基线就绪未监控 | 主操作开始监控；摘要卡完整覆盖标签 |
+| 09 | F3 采样过渡 | `isProcessSamplePending` 禁主动作 |
+| 10–11 | F3/F5 监控中（11 深色代表） | 主窗基准态 |
+| 12 | F4 监控中且扫描中 | 双任务 + 进度叠旧结果 |
+| 13–15 | F4 监控未运行/停止即时 | 未运行 vs statusMessage 已停止 |
+| 16 | F7 停止后有结果 | 结果只读 + 开始监控强调 |
+| 17–19 | F6 失败/取消保旧 | `showingStaleAcceptedResults`；监控不自动停 |
+| 20 | F6 部分覆盖 | 三卡改名 + 覆盖缺口行 |
+| 21–26 | F5 空比较/进程不可得/四 Tab | 空态文案 + 既有 Table |
+| 27–30 | 两确认框（深色代表） | `SessionPresentation` 逐字 + `confirmationDialog` |
 
-## 待补（不擅定）
+深色页为代表性外观，跟系统 Dark，不另写一套。
 
-| 来源 | 缺口 |
-| --- | --- |
-| Nova | 完整 **v1.2 组合主操作 / 状态表** 尚未交接；未画状态不得猜新机制 |
-| Nova | 目录选择子流程、基线建立引导、暂停/恢复等未交规则 |
-| Huluwa | 菜单栏 / Dock / 更多空态与过渡动效（本批范围外） |
-| Huluwa | 卡片内 D2 金属小图标资源是否单独交付（本批用系统符号 + 色板） |
-| 产品 | 验收通过前 **不合并、不发布**；由 Cook 技术 + Nova 产品 + Huluwa UI 验收 |
+## Liquid Glass（Albert 未闭合项）
 
-## 对比度 / 可访问性
+- Apple：标准 SwiftUI/AppKit 控件在 **Xcode 26 / macOS 26 SDK** 下构建并在对应系统运行时，可自动获得 Liquid Glass；自定义可用 `glassEffect` / `NSGlassEffectView`（需 Swift 6.2+ 编译期可见）。
+- 当前 CI：`macos-15` + **Xcode 16.4**；部署目标 **macOS 13 arm64**。现 SDK **无法**编译或虚报 `glassEffect` 支持。
+- **状态：未闭合。** 路线是继续优先原生系统控件，待工具链升到可用 SDK 后再评估自动材料 / `#available`；本批不自绘仿玻璃，也不自行标「不采用/取消」。
 
-- 主操作：系统 prominent + D2 tint `#9C4F39`（交接板约 5.85:1）；其余按钮走系统 bordered
-- Tab/排序：系统 segmented（系统浅深色与对比度）
-- 身份珊瑚 `#BE7054` **不作**失败/监控状态色；监控用系统绿，错误用系统红
+## 验收边界
 
-## Liquid Glass（研究结论，不阻断本批）
-
-- Apple 文档：`glassEffect` / Liquid Glass 随 **macOS 26（Tahoe）SDK**、**Xcode 26** 提供；系统原生控件在用新 SDK 构建并在新系统运行时可自动获得材料。
-- 当前 CI：`macos-15` + **Xcode 16.4** / Swift 6.1.2；部署目标仍为 **macOS 13 arm64**。
-- **本批不调用** `glassEffect`、不自绘仿玻璃、不宣称 macOS 26/27 支持。若未来升 SDK，仅在 `#available(macOS 26, *)` 下评估，且不得压过原生优先原则。
+- Nova 目视关键页 ≠ 运行验收；Cook 技术 / Nova 产品 / Huluwa UI 正式验收前 **不合并、不发布**
+- CI 绿 ≠ 同包实机；预览 merge SHA ≠ branch SHA ≠ 最终 main 包

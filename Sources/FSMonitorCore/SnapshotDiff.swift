@@ -19,7 +19,7 @@ public enum ChangeKind: String, Equatable, Sendable {
         case .shrunk: return "缩小"
         case .unchanged: return "未变化"
         case .typeChanged: return "类型变化"
-        case .coverageGap: return "覆盖缺口"
+        case .coverageGap: return "覆盖缺口（未知，不可判断）"
         }
     }
 }
