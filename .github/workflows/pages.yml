@@ -1,0 +1,63 @@
+name: Deploy GitHub Pages
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "docs/**"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify landing page files
+        run: |
+          test -f docs/index.html
+          test -f docs/style.css
+          grep -q 'fs-monitor' docs/index.html
+          grep -q 'lang="zh-CN"' docs/index.html
+          ! grep -qiE 'sqlite|fs_usage' docs/index.html
+          python3 - <<'PY'
+          from pathlib import Path
+          html = Path("docs/index.html").read_text(encoding="utf-8")
+          css = Path("docs/style.css").read_text(encoding="utf-8")
+          assert "<title>" in html and "</html>" in html
+          assert "FSEvents" in html
+          assert "100% 物理 IO" in html
+          assert "--sea:" in css
+          print("static checks ok")
+          PY
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
