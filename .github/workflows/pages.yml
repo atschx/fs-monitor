@@ -55,6 +55,10 @@ jobs:
           assert "需求仍开放" not in html
           assert "发布准备中" not in html
           assert 'id="team"' in html
+          assert "Albert" in html
+          assert "共同启动的第一个项目" in html
+          assert "管家" in html
+          assert "统筹协同与发布核验" in html
           for name in ("Nova", "Huluwa", "Cook", "Bob", "Eric"):
               assert name in html
           for path in (
