@@ -16,6 +16,7 @@ fi
 export MACOSX_DEPLOYMENT_TARGET=13.0
 cd "$ROOT"
 swift build -c release --arch arm64 -Xswiftc -target -Xswiftc arm64-apple-macos13.0
+SHOW_BIN="$(swift build -c release --arch arm64 -Xswiftc -target -Xswiftc arm64-apple-macos13.0 --show-bin-path | tail -n 1)"
 
 # New SwiftPM/Xcode may put products under .build/release or .build/out/Products/Release.
 resolve_bin() {
@@ -28,7 +29,11 @@ resolve_bin() {
   done
   return 1
 }
-BUILD_DIR="$(resolve_bin || true)"
+if [ -n "${SHOW_BIN:-}" ] && [ -x "$SHOW_BIN/DemoFirstScreen" ]; then
+  BUILD_DIR="$SHOW_BIN"
+else
+  BUILD_DIR="$(resolve_bin || true)"
+fi
 BIN="${BUILD_DIR:-}/DemoFirstScreen"
 if [ ! -x "$BIN" ]; then
   echo "expected executable not found under .build release products" >&2
@@ -121,9 +126,15 @@ if ! command -v codesign >/dev/null 2>&1; then
   echo "codesign not found" >&2
   exit 1
 fi
+# Sign nested bundles before the bundles that contain them, then the app.
 find "$APP" -name "*.bundle" -type d -print | while IFS= read -r bundle; do
+  depth=$(printf '%s' "$bundle" | tr -cd '/' | wc -c | tr -d ' ')
+  printf '%s %s\n' "$depth" "$bundle"
+done | sort -nr | sed 's/^[0-9][0-9]* //' > "$DIST/bundle-sign-order.txt"
+while IFS= read -r bundle; do
+  [ -n "$bundle" ] || continue
   codesign --force --sign - --timestamp=none "$bundle"
-done
+done < "$DIST/bundle-sign-order.txt"
 codesign --force --sign - --timestamp=none --identifier me.atschx.fsmonitor.demofirstscreen "$APP"
 codesign --verify --strict --verbose=2 "$APP"
 

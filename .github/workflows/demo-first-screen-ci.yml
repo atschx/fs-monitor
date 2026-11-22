@@ -39,25 +39,30 @@ jobs:
           mkdir -p "$FS_TEST_FIXTURE_PARENT"
           # Fixture parent is the runner temp directory. Do not call diskutil,
           # --startup-metadata-verify-only, --gpu-verify-only, or --launch here.
-          swift test --arch arm64 -Xswiftc -target -Xswiftc arm64-apple-macos13.0 --xunit-output "$RUNNER_TEMP/demofirstscreen-junit.xml" | tee "$RUNNER_TEMP/demofirstscreen-swift-test.log"
+          # XCTest is the suite. Swift 6.1 accepts --xunit-output but does not
+          # write it for these XCTest bundles, so the count comes from the log.
+          swift test --arch arm64 -Xswiftc -target -Xswiftc arm64-apple-macos13.0 | tee "$RUNNER_TEMP/demofirstscreen-swift-test.log"
           python3 - <<'PY'
-          import os, sys, xml.etree.ElementTree as ET
-          path = os.environ["RUNNER_TEMP"] + "/demofirstscreen-junit.xml"
-          root = ET.parse(path).getroot()
-          suites = list(root) if root.tag == "testsuites" else [root]
-          tests = sum(int(s.attrib.get("tests", "0")) for s in suites)
-          failures = sum(int(s.attrib.get("failures", "0")) for s in suites)
-          errors = sum(int(s.attrib.get("errors", "0")) for s in suites)
-          skipped = sum(int(s.attrib.get("skipped", "0")) for s in suites)
-          print(f"junit_tests={tests}")
-          print(f"junit_failures={failures}")
-          print(f"junit_errors={errors}")
-          print(f"junit_skipped={skipped}")
+          import os, re, sys, pathlib
+          text = pathlib.Path(os.environ["RUNNER_TEMP"] + "/demofirstscreen-swift-test.log").read_text(errors="replace")
+          text = re.sub(r"\x1b\[[0-9;]*m", "", text)
+          passed = len(re.findall(r"^Test Case '.*' passed ", text, re.M))
+          failed = len(re.findall(r"^Test Case '.*' failed ", text, re.M))
+          skipped = len(re.findall(r"^Test Case '.*' skipped", text, re.M))
+          executed = re.findall(r"Executed (\d+) tests, with (\d+) failures", text)
+          print(f"xctest_passed={passed}")
+          print(f"xctest_failed={failed}")
+          print(f"xctest_skipped={skipped}")
+          print(f"xctest_executed_lines={executed}")
           out = os.environ["RUNNER_TEMP"] + "/test-counts.txt"
           open(out, "w").write(
-              f"tests={tests}\nfailures={failures}\nerrors={errors}\nskipped={skipped}\n"
+              f"tests={passed}\nfailures={failed}\nerrors=0\nskipped={skipped}\n"
           )
-          if tests != 126 or failures or errors or skipped:
+          if "Test Suite 'All tests' passed" not in text:
+              sys.exit("XCTest suite did not pass")
+          if not executed or executed[-1] != ("126", "0"):
+              sys.exit(f"unexpected suite summary {executed[-1] if executed else None}")
+          if passed != 126 or failed or skipped:
               sys.exit(1)
           PY
 
