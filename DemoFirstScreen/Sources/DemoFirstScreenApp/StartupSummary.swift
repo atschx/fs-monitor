@@ -52,7 +52,8 @@ final class StartupSummaryStore:ObservableObject {
     @Published private(set) var consent=StartupConsent()
     @Published private(set) var message="尚未读取本机目录。先了解范围，再明确开始授权概览。"
     @Published private(set) var candidates=[SnapshotItem]()
-    @Published private(set) var capacity:Int64?,available:Int64?
+    @Published private(set) var capacity:Int64?
+    @Published private(set) var available:Int64?
     @Published private(set) var phase="neutral"
     private var observers=[NSObjectProtocol]()
     private var cancellation:ScanCancellation?
