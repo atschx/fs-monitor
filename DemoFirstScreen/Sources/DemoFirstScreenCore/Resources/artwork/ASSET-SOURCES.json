@@ -1,0 +1,138 @@
+{
+  "source": "/workspace/team/projects/fs-monitor/work/Huluwa/icon-concepts-v1/D2-refined/fs-monitor-icon-D2-1024.png",
+  "source_sha256": "010b92869cb37f4f187aabe127cd0900d25132a0b400d27dc8c7a777ac5085d4",
+  "identical_to_eric_reference_copy": true,
+  "eric_reference_copy": "/workspace/team/projects/fs-monitor/work/Eric/references/firstscreen-20261121/fs-monitor-icon-D2-1024.png",
+  "recipes": {
+    "eyes": {
+      "source_lines": "draw_review.py L9-10,L30; sequence-5frames/draw_sequence.py L8-18",
+      "crop_xyxy_inclusive_end_exclusive": [
+        458,
+        164,
+        676,
+        291
+      ],
+      "mask_ellipses": [
+        [
+          4,
+          2,
+          110,
+          120
+        ],
+        [
+          108,
+          14,
+          216,
+          126
+        ]
+      ],
+      "native_placement_1200x900": {
+        "resize": [
+          654,
+          381
+        ],
+        "origin": [
+          273,
+          -22
+        ]
+      },
+      "output_2400x1800": {
+        "resize": [
+          1308,
+          762
+        ],
+        "origin": [
+          546,
+          -44
+        ]
+      },
+      "gaze_iris_centers_in_crop": [
+        [
+          58,
+          79
+        ],
+        [
+          147,
+          90
+        ]
+      ],
+      "gaze_shift_in_crop_px": {
+        "x_times_direction": 12,
+        "y": -3
+      }
+    },
+    "hub": {
+      "source_lines": "selected-base-0353-warm-palette/draw_warm.py L25-26; selected-base-0353-hub-frame02/notes.md",
+      "crop_xyxy_inclusive_end_exclusive": [
+        410,
+        355,
+        610,
+        532
+      ],
+      "output_2400x1800": {
+        "resize": [
+          400,
+          354
+        ],
+        "origin": [
+          1000,
+          1664
+        ]
+      },
+      "shadow_2400": {
+        "canvas": [
+          520,
+          260
+        ],
+        "ellipse": [
+          45,
+          100,
+          475,
+          248
+        ],
+        "fill": [
+          55,
+          48,
+          34,
+          100
+        ],
+        "blur": 14,
+        "origin": [
+          940,
+          1665
+        ]
+      },
+      "never_tint_metal": true
+    }
+  },
+  "outputs": {
+    "d2-eyes-rest.png": {
+      "sha256": "a2b293f9748b997ca39b09a35a9575def7ef19f8839972f7868a4882c300b779",
+      "size": [
+        1308,
+        762
+      ]
+    },
+    "d2-eyes-gaze-left.png": {
+      "sha256": "325b30509254663a8b985f799eb3ade9489c21598fdd9022c3c415d10bb7a3ae",
+      "size": [
+        1308,
+        762
+      ]
+    },
+    "d2-eyes-gaze-right.png": {
+      "sha256": "b6e68bd5c3c3d7ed75ca980672dfe00269b810bf2239dbea8905ddde7721f3a7",
+      "size": [
+        1308,
+        762
+      ]
+    },
+    "d2-hub.png": {
+      "sha256": "e7a9caa8302af04a186e71e2bfb245b3684bad6bc9381443761a1024be5e07bc",
+      "size": [
+        400,
+        354
+      ]
+    }
+  }
+}

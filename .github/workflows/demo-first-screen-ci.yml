@@ -1,0 +1,179 @@
+name: DemoFirstScreen macOS artifact
+
+# Build artifact only. Does not publish a Release, deploy Pages, or scan the runner startup Data volume.
+on:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: demofirstscreen-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  tests-build-sign:
+    name: Swift tests, arm64 macOS 13, adhoc strict
+    runs-on: macos-15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Show environment
+        run: |
+          echo "runner=$(uname -m)"
+          sw_vers
+          xcodebuild -version
+          swift --version
+          echo "git_sha=$(git rev-parse HEAD)"
+          test "$(uname -m)" = "arm64"
+
+      - name: Run Swift tests without Metal or startup Data scan
+        working-directory: DemoFirstScreen
+        env:
+          MACOSX_DEPLOYMENT_TARGET: "13.0"
+          FS_TEST_FIXTURE_PARENT: ${{ runner.temp }}/fs-monitor-own-fixtures
+        run: |
+          set -euo pipefail
+          mkdir -p "$FS_TEST_FIXTURE_PARENT"
+          # Fixture parent is the runner temp directory. Do not call diskutil,
+          # --startup-metadata-verify-only, --gpu-verify-only, or --launch here.
+          # XCTest is the suite. Swift 6.1 accepts --xunit-output but does not
+          # write it for these XCTest bundles, so the count comes from the log.
+          swift test --arch arm64 -Xswiftc -target -Xswiftc arm64-apple-macos13.0 | tee "$RUNNER_TEMP/demofirstscreen-swift-test.log"
+          python3 - <<'PY'
+          import os, re, sys, pathlib
+          text = pathlib.Path(os.environ["RUNNER_TEMP"] + "/demofirstscreen-swift-test.log").read_text(errors="replace")
+          text = re.sub(r"\x1b\[[0-9;]*m", "", text)
+          passed = len(re.findall(r"^Test Case '.*' passed ", text, re.M))
+          failed = len(re.findall(r"^Test Case '.*' failed ", text, re.M))
+          skipped = len(re.findall(r"^Test Case '.*' skipped", text, re.M))
+          executed = re.findall(r"Executed (\d+) tests, with (\d+) failures", text)
+          print(f"xctest_passed={passed}")
+          print(f"xctest_failed={failed}")
+          print(f"xctest_skipped={skipped}")
+          print(f"xctest_executed_lines={executed}")
+          out = os.environ["RUNNER_TEMP"] + "/test-counts.txt"
+          open(out, "w").write(
+              f"tests={passed}\nfailures={failed}\nerrors=0\nskipped={skipped}\n"
+          )
+          if "Test Suite 'All tests' passed" not in text:
+              sys.exit("XCTest suite did not pass")
+          if not executed or executed[-1] != ("126", "0"):
+              sys.exit(f"unexpected suite summary {executed[-1] if executed else None}")
+          if passed != 126 or failed or skipped:
+              sys.exit(1)
+          PY
+
+      - name: Package arm64 release app
+        working-directory: DemoFirstScreen
+        env:
+          MACOSX_DEPLOYMENT_TARGET: "13.0"
+        run: |
+          chmod +x scripts/package-macos.sh
+          bash scripts/package-macos.sh
+
+      - name: Verify arm64, deployment 13.0, and adhoc strict signature
+        working-directory: DemoFirstScreen
+        run: |
+          set -euo pipefail
+          APP="dist/DemoFirstScreen.app"
+          BIN="$APP/Contents/MacOS/DemoFirstScreen"
+          ARCHS="$(lipo -archs "$BIN")"
+          echo "lipo=$ARCHS"
+          test "$ARCHS" = "arm64"
+          MIN="$(plutil -extract LSMinimumSystemVersion raw "$APP/Contents/Info.plist")"
+          echo "plist_min=$MIN"
+          test "$MIN" = "13.0"
+          otool -l "$BIN" > "$RUNNER_TEMP/load-commands.txt"
+          python3 - <<'PY'
+          import os, pathlib, re
+          text = pathlib.Path(os.environ["RUNNER_TEMP"] + "/load-commands.txt").read_text()
+          match = re.search(r"cmd LC_BUILD_VERSION.*?minos\s+(\S+)", text, re.S)
+          if not match:
+              raise SystemExit("LC_BUILD_VERSION minos not found")
+          if match.group(1) not in ("13.0", "13.0.0"):
+              raise SystemExit(f"unexpected minos {match.group(1)}")
+          print("macho_minos=" + match.group(1))
+          PY
+          codesign --verify --strict --verbose=2 "$APP"
+          codesign -dv --verbose=4 "$APP" > dist/codesign-details.txt 2>&1
+          grep -q "Signature=adhoc" dist/codesign-details.txt
+          grep -q "Identifier=me.atschx.fsmonitor.demofirstscreen" dist/codesign-details.txt
+          shasum -a 256 dist/DemoFirstScreen.app.zip | tee dist/DemoFirstScreen.app.sha256
+          {
+            echo "git_sha=$(git rev-parse HEAD)"
+            echo "base_main=417ca1de16809da8d2c14abb93221b3680d42f23"
+            echo "source_tar_sha256=0b82d2ae30c92451aa6549f117fc910ed0e4b8d7c2ab9c668a46819151dd8168"
+            echo "architectures=$ARCHS"
+            echo "plist_min=$MIN"
+            echo "codesign=adhoc strict verify ok"
+            echo "startup_data_scan=not run"
+            echo "fda_tcc=not requested"
+            echo "gpu_readback=separate job, not included in these 126 tests"
+            cat "$RUNNER_TEMP/test-counts.txt"
+          } > dist/BUILD_INFO.txt
+          cat dist/BUILD_INFO.txt
+
+      - name: Upload app zip and checksum
+        uses: actions/upload-artifact@v4
+        with:
+          name: DemoFirstScreen-macos-app
+          path: |
+            DemoFirstScreen/dist/DemoFirstScreen.app.zip
+            DemoFirstScreen/dist/DemoFirstScreen.app.sha256
+            DemoFirstScreen/dist/BUILD_INFO.txt
+            DemoFirstScreen/dist/codesign-details.txt
+          if-no-files-found: error
+          retention-days: 14
+
+  metal-gpu-readback:
+    name: Metal GPU readback, not one of the 126 tests
+    runs-on: macos-15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build release executable
+        working-directory: DemoFirstScreen
+        env:
+          MACOSX_DEPLOYMENT_TARGET: "13.0"
+        run: |
+          set -euo pipefail
+          swift build -c release --arch arm64 -Xswiftc -target -Xswiftc arm64-apple-macos13.0
+          swift build -c release --arch arm64 -Xswiftc -target -Xswiftc arm64-apple-macos13.0 --show-bin-path > "$RUNNER_TEMP/binpath.txt"
+
+      - name: Run offscreen Metal verification on own fixtures only
+        working-directory: DemoFirstScreen
+        run: |
+          set -euo pipefail
+          BIN="$(cat "$RUNNER_TEMP/binpath.txt")"
+          EXE="$BIN/DemoFirstScreen"
+          test -x "$EXE"
+          OUT="$RUNNER_TEMP/gpu-verify-out"
+          rm -rf "$OUT"
+          # Fresh directory only. Does not pass --startup-metadata-verify-only or --launch,
+          # and does not compare against a private /Users/huluwa evidence tree.
+          set +e
+          "$EXE" --gpu-verify-only "$OUT" > "$RUNNER_TEMP/gpu-verify.log" 2>&1
+          code=$?
+          set -e
+          echo "gpu_verify_exit=$code"
+          if [ "$code" -ne 0 ]; then
+            echo "Metal GPU readback did not succeed. This is not counted as a passed Swift test."
+            tail -n 80 "$RUNNER_TEMP/gpu-verify.log" || true
+            exit "$code"
+          fi
+          test -f "$OUT/gpu-cpu-verification.json" || test -f "$OUT/safe-gaze/legacy-uniform-material-canonical.json" || ls -R "$OUT"
+
+      - name: Upload GPU result or failure log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: DemoFirstScreen-gpu-readback
+          path: |
+            ${{ runner.temp }}/gpu-verify.log
+            ${{ runner.temp }}/gpu-verify-out
+          if-no-files-found: warn
+          retention-days: 14

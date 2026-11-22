@@ -1,0 +1,48 @@
+{
+  "id": "eric-du-20261121-readonly",
+  "testOnly": false,
+  "label": "Eric 只读 du 快照",
+  "startedAt": "2026-11-21T03:43:04-08:00",
+  "endedAt": "2026-11-21T03:45:59-08:00",
+  "timeZoneName": "America/Los_Angeles",
+  "caliber": "allocated",
+  "caliberNote": "allocated KiB × 1024；非逻辑大小，亦非物理盘容量或空闲",
+  "apfsRootDataDedupVerified": false,
+  "nonOverlapVerified": false,
+  "activity": "notCollected",
+  "notes": [
+    "本轮只读统计。APFS / 与 /System/Volumes/Data 重复未排除。",
+    "不可对各项求和或计算角度，不可画四个真实比例扇区。",
+    "未知与部分读取不得补零，不得改用旧 20/30/50/100GB 示例。"
+  ],
+  "items": [
+    {
+      "id": "Applications",
+      "name": "Applications",
+      "bytes": 34276593664,
+      "errorCount": 0,
+      "readStatus": "reportedComplete"
+    },
+    {
+      "id": "Library",
+      "name": "Library",
+      "bytes": 8785653760,
+      "errorCount": 14,
+      "readStatus": "partial"
+    },
+    {
+      "id": "System",
+      "name": "System",
+      "bytes": 296877675520,
+      "errorCount": 904,
+      "readStatus": "partial"
+    },
+    {
+      "id": "Users",
+      "name": "Users",
+      "bytes": 172215885824,
+      "errorCount": 553,
+      "readStatus": "partial"
+    }
+  ]
+}
