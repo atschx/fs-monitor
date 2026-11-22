@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="fs-monitor：macOS 目录增长说明工具测试预发布。建立空间基线，记录 FSEvents，再扫描差分；不能做精确归因。">
-  <title>fs-monitor · macOS 目录增长说明</title>
+  <meta name="description" content="FS-Monitor 未公证预览版：从点开图标看见盘面，眼睛跟随指针并待机。启动盘概览尚未在实机验证。">
+  <title>FS-Monitor · 一双看着磁盘的眼睛</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=Sora:wght@600;700&display=swap" rel="stylesheet">
@@ -15,70 +15,69 @@
 
   <header class="hero">
     <p class="brand">fs-monitor</p>
-    <h1>把目录变大这件事说清楚，而不是假装找到了凶手。</h1>
-    <p class="lede">
-      macOS 测试预发布 <strong>v0.1.1-beta.1</strong>（包内 0.1.1）：对选定目录建立空间基线，可选监控 FSEvents，再次扫描后对照差异。
-      进程读写只在系统真实返回时展示，用作旁证，不是目录级归因，也不能做程序—文件精确归因或 100% 物理 IO 归因。
-      退出后不保留会话。
-    </p>
+    <h1>一双看着磁盘的眼睛</h1>
+    <p class="lede">从点开图标开始，看见盘面；眼睛会跟着你看。</p>
     <div class="cta-row">
-      <a class="cta primary" href="https://github.com/atschx/fs-monitor/releases/tag/v0.1.1-beta.1">下载 v0.1.1-beta.1</a>
-      <a class="cta secondary" href="guide.html">使用指南</a>
-      <a class="cta secondary" href="https://github.com/atschx/fs-monitor">源码</a>
+      <a class="cta primary" href="https://github.com/atschx/fs-monitor/releases/download/v0.1.0-demo-preview.1/DemoFirstScreen.app.zip">下载未公证预览版</a>
+      <a class="cta secondary" href="guide.html">第一次打开</a>
+      <a class="cta secondary" href="https://github.com/atschx/fs-monitor/releases/tag/v0.1.0-demo-preview.1">核对发布记录</a>
     </div>
-    <p class="status-chip">测试预发布 · 仅 Apple Silicon (arm64) · ad-hoc 未公证 · 同包实机交互未验收 · Liquid Glass 未提供 · 非全量验收通过</p>
+    <p class="status-chip">未公证预览版 · macOS 13+ Apple Silicon · 构建于 macOS 15.8.2 ARM · adhoc · 实机界面尚未验证</p>
   </header>
 
   <main>
-    <section aria-labelledby="can-title">
-      <h2 id="can-title">当前能做什么</h2>
-      <p class="section-lede">与仓库 README 一致，只写已经实现的能力。细节见使用指南。</p>
+    <section aria-labelledby="see-title">
+      <h2 id="see-title">打开之后</h2>
+      <p class="section-lede">硬盘很贵，文件却常常悄悄变多。FS-Monitor 想让占用更容易一眼看懂。它不是一份完整的磁盘分析报告。</p>
       <ul class="plain-list">
-        <li>扫描所选目录的逻辑大小与（可读时的）分配块，建立基线后再扫描做差分；一侧未覆盖的路径记为覆盖缺口，不作确定删除/新增。</li>
-        <li>监控窗口记录 FSEvents 路径、标志与时间；事件没有 PID。</li>
-        <li>若进程采样成功，显示全进程磁盘计数差值；失败则说明未取得数据，不以 0 充数。</li>
-        <li>可取消扫描；失败/取消不会用半次结果替换已有基线。停止监控与取消扫描相互独立。默认不需要 root。</li>
+        <li>点开图标，先看见盘面，以及看着它的眼睛。</li>
+        <li>移动指针时，眼睛会跟随，并包含待机。</li>
+        <li>这不是先请你挑选一个文件夹。</li>
       </ul>
     </section>
 
-    <section aria-labelledby="cannot-title">
-      <h2 id="cannot-title">做不到什么</h2>
-      <p class="section-lede">这些限制写在应用界面里，本页也不淡化。</p>
+    <section aria-labelledby="disk-title">
+      <h2 id="disk-title">启动盘概览</h2>
+      <p class="section-lede">预览版里有这个入口。实机上的完全磁盘访问、真实全盘映射和真实界面尚未验证，不等于实机验收通过。</p>
       <ul class="plain-list">
-        <li>不能指出是哪个进程写入了该目录；全进程计数不是目标目录 I/O。</li>
-        <li>时间接近不是因果；不能做 100% 物理 IO 归因。</li>
-        <li>不能还原监控开始前的历史；退出后不保存会话、证据或扫描结果。</li>
-        <li>不是现状：持久化回溯、整盘 IO 仪表盘、正式公证签名版、Liquid Glass 外观。</li>
+        <li>只有你在 App 内明确同意，并本人到系统设置里授予完全磁盘访问之后，才会尝试只读概览启动盘。</li>
+        <li>回到 App 只表示可以再试一次，不表示授权已经成功。</li>
+        <li>正在查看，或有些内容读不到时，不会说成已经看完整个磁盘。</li>
+        <li>不能把它说成已经准确找出全盘最大的部分，也不是持续监控，不能判断是谁在写入，也没有 30 毫秒以内的实机结果。</li>
       </ul>
     </section>
 
     <section aria-labelledby="get-title">
-      <h2 id="get-title">如何获取</h2>
-      <p class="section-lede">下载可双击的 <code>FSMonitor.app</code>；以本预发布 Release 为准，不要用设计图或 PR Actions 预览包冒充。</p>
+      <h2 id="get-title">获取与核对</h2>
+      <p class="section-lede">下载按钮指向本次预览版的长期公开文件。更早的 v0.1.1-beta.1 与 v0.1.0-test 仍保留，不是这次的下载。</p>
       <ul class="plain-list">
-        <li><a href="https://github.com/atschx/fs-monitor/releases/tag/v0.1.1-beta.1">GitHub Release v0.1.1-beta.1</a>：下载 <code>FSMonitor.app.zip</code>，并核对该页公布的 SHA-256 / <code>BUILD_INFO.txt</code>。</li>
-        <li>绑定提交 <code>f1b077f96e5c7244fe55bc42bb060d45e9e09769</code>；构建号 <code>2</code>；zip SHA-256 <code>e31843a4cbb1b1f5fc543ccd2cd561061487519efd18db1f97e8e29e5d7031e4</code>。早期 <a href="https://github.com/atschx/fs-monitor/releases/tag/v0.1.0-test">v0.1.0-test</a> 仍保留。</li>
-        <li>目标：macOS 13+，<strong>仅 arm64</strong>。最低系统目标 ≠ 已在 macOS 13 完成交互验收。</li>
-        <li>签名：ad-hoc；未公证；Gatekeeper/<code>spctl</code> 评估拒绝（预期）。首次打开不要关闭系统保护。</li>
-        <li>同包实机交互<strong>未验收</strong>。Liquid Glass <strong>未提供</strong>。</li>
-        <li>图标为 D2 主题接入；设计稿不是本包运行截图。</li>
+        <li><a href="https://github.com/atschx/fs-monitor/releases/download/v0.1.0-demo-preview.1/DemoFirstScreen.app.zip">DemoFirstScreen.app.zip</a>，包内版本 <code>0.1.0-demo</code>。</li>
+        <li>SHA-256：<code>91dd03b57d0fcae67d622b0fb3520580dc5c6bbf1ba0d0ccdd4c3e36236e008d</code></li>
+        <li>发布提交 <code>5a4224034d30a928dea22fe1585f52fbba33e9d9</code>，源码树 <code>e20e29814f7e814115583c4c01e01eedcb0d759a</code>。已测合并提交 <code>8176c384e8d0bf5d2c5fda4963c6582351eb0de2</code> 与它是同一棵树。</li>
+        <li>请同时打开 <a href="https://github.com/atschx/fs-monitor/releases/download/v0.1.0-demo-preview.1/BUILD_INFO.txt">BUILD_INFO.txt</a> 和 <a href="https://github.com/atschx/fs-monitor/releases/download/v0.1.0-demo-preview.1/RELEASE_BINDING.txt">RELEASE_BINDING.txt</a>。</li>
+        <li>兼容目标是 macOS 13 或更新的 Apple Silicon（arm64）。这次的构建机器是 macOS 15.8.2 ARM，不是 macOS 13 实机。</li>
+        <li>签名是 adhoc：没有 Developer ID，没有公证。系统可能会阻止打开。</li>
       </ul>
-      <p class="note">更多步骤见 <a href="guide.html">使用指南</a>。</p>
+      <p class="note">打开方式见 <a href="guide.html">第一次打开</a>。本页没有放置界面主图，因为还没有最终实拍。</p>
     </section>
 
     <section aria-labelledby="team-title" id="team">
       <h2 id="team-title">团队</h2>
-      <p class="section-lede">
-        这是 Albert 与这支助手团队共同启动的第一个项目。Albert 带来真实需求、使用体验与判断，团队协作完成产品、设计、研发和宣发。
-        双方仍在磨合。角色并列，不分先后。职责说明不等于实机验收通过，也不表示已完成演示视频、Liquid Glass 或全量验收。
-      </p>
+      <p class="section-lede">角色并列，不分先后。职责说明不等于实机验收通过。</p>
       <ul class="team-grid">
+        <li class="team-card">
+          <div class="team-meta">
+            <p class="team-name">Albert</p>
+            <p class="team-role">需求</p>
+            <p class="team-contrib">真实需求、使用感受与方向判断</p>
+          </div>
+        </li>
         <li class="team-card">
           <img class="team-avatar" src="team/nova.png" width="121" height="121" alt="Nova 头像：橙色面具造型，双黑色竖眼" loading="lazy" decoding="async">
           <div class="team-meta">
             <p class="team-name">Nova</p>
             <p class="team-role">产品</p>
-            <p class="team-contrib">产品定位、需求与验收标准</p>
+            <p class="team-contrib">产品定位、规格与取舍</p>
           </div>
         </li>
         <li class="team-card">
@@ -86,7 +85,7 @@
           <div class="team-meta">
             <p class="team-name">Huluwa</p>
             <p class="team-role">设计</p>
-            <p class="team-contrib">交互、界面与 D2 图标设计</p>
+            <p class="team-contrib">交互、界面与图标视觉</p>
           </div>
         </li>
         <li class="team-card">
@@ -94,7 +93,7 @@
           <div class="team-meta">
             <p class="team-name">Cook</p>
             <p class="team-role">研发</p>
-            <p class="team-contrib">原生开发、构建测试与技术核验</p>
+            <p class="team-contrib">研发实现、测试与打包</p>
           </div>
         </li>
         <li class="team-card">
@@ -102,15 +101,15 @@
           <div class="team-meta">
             <p class="team-name">Bob</p>
             <p class="team-role">宣发</p>
-            <p class="team-contrib">产品文案、演示脚本与宣传素材策划</p>
+            <p class="team-contrib">产品叙事与说明宣发</p>
           </div>
         </li>
         <li class="team-card">
           <img class="team-avatar" src="team/eric.png" width="225" height="225" alt="Eric 头像：白色圆形角色，双黑色斜眼" loading="lazy" decoding="async">
           <div class="team-meta">
             <p class="team-name">Eric</p>
-            <p class="team-role">管家</p>
-            <p class="team-contrib">统筹协同与发布核验</p>
+            <p class="team-role">统筹</p>
+            <p class="team-contrib">统筹协调与交付核验</p>
           </div>
         </li>
       </ul>
@@ -118,8 +117,8 @@
   </main>
 
   <footer>
-    <p><a href="https://github.com/atschx/fs-monitor">github.com/atschx/fs-monitor</a> · <a href="guide.html">使用指南</a> · <a href="https://github.com/atschx/fs-monitor/blob/main/README.md">README</a></p>
-    <p class="foot-note">本站由仓库 <code>docs/</code> 经 GitHub Pages 发布。从 <code>atschx.github.io/fs-monitor</code> 进入时，可能转到 <code>blog.atschx.me/fs-monitor</code>。</p>
+    <p><a href="https://github.com/atschx/fs-monitor">github.com/atschx/fs-monitor</a> · <a href="guide.html">第一次打开</a></p>
+    <p class="foot-note">本页由本仓库 <code>docs/</code> 经 GitHub Pages 发布。</p>
   </footer>
 </body>
 </html>
