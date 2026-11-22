@@ -7,6 +7,7 @@ byte_match=92 archive files matched the tar before the CI packaging edit
 ci_source_edit=DemoFirstScreen/scripts/package-macos.sh copies the app resource bundle and verifies the adhoc signature with --strict
 swift61_compile_edit=StartupSummary.swift splits one @Published declaration into capacity and available. Same types and assignments. Run 45003072120 failed before any test with "property wrapper can only apply to a single variable".
 count_edit=Run 45003246260 executed 126 XCTest with 0 failures, then the job stopped because Swift 6.1 did not write the requested xunit file. The workflow now counts the XCTest log. package-macos.sh uses swift --show-bin-path and signs bundles deepest-first.
+bundle_sign_edit=Run 45003527186 packaged until codesign rejected Contents/Resources/DemoFirstScreen_DemoFirstScreenCore.bundle as an unsuitable bundle. The signed bundle stays in Contents/MacOS and Resources points at it with a relative symlink.
 ci_workflow=.github/workflows/demo-first-screen-ci.yml
 not_run_in_ci=--startup-metadata-verify-only, --launch, diskutil against the runner Data volume, FDA/TCC changes, Release publish, Pages deploy
 gpu=separate job; private /Users/huluwa hash comparison is not part of CI

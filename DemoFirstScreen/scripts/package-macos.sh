@@ -66,9 +66,15 @@ copy_bundle() {
     ls -la "$BUILD_DIR" >&2 || true
     exit 1
   fi
-  cp -R "$found" "$MACOS/"
-  cp -R "$found" "$RES/"
-  if ! find "$MACOS" "$RES" -name "$marker" | grep -q .; then
+  base=$(basename "$found")
+  rm -rf "$MACOS/$base" "$RES/$base"
+  # Nested bundles can be signed under Contents/MacOS. macOS 15 codesign
+  # rejects the same bundle when it is copied into Contents/Resources
+  # ("bundle format unrecognized"). Bundle.module looks in Resources first,
+  # so that path is a relative symlink to the signed MacOS copy.
+  cp -R "$found" "$MACOS/$base"
+  ln -s "../MacOS/$base" "$RES/$base"
+  if ! find "$MACOS/$base" -name "$marker" | grep -q .; then
     echo "missing $marker from packaged app" >&2
     exit 1
   fi
