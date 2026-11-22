@@ -51,6 +51,49 @@ mkdir -p "$MACOS" "$RES"
 cp "$BIN" "$MACOS/DemoFirstScreen"
 # Production resource bundles must travel with the executable for Bundle.module.
 # Copy next to the executable and into Resources. Test bundles are not selected.
+# SwiftPM emits a flat .bundle (Info.plist at the root). macOS codesign
+# rejects that layout as "bundle format unrecognized". A versioned bundle
+# keeps the same files under Contents/Resources, which is where
+# Bundle.module looks, including the existing Resources/ subdirectory.
+normalize_bundle() {
+  bundle="$1"
+  if [ -f "$bundle/Contents/Info.plist" ]; then
+    return 0
+  fi
+  stage=$(mktemp -d)
+  mkdir -p "$stage/Contents/Resources"
+  if [ -f "$bundle/Info.plist" ]; then
+    mv "$bundle/Info.plist" "$stage/Contents/Info.plist"
+  else
+    name=$(basename "$bundle" .bundle)
+    cat > "$stage/Contents/Info.plist" <<PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleIdentifier</key>
+  <string>me.atschx.fsmonitor.demofirstscreen.resources.${name}</string>
+  <key>CFBundleInfoDictionaryVersion</key>
+  <string>6.0</string>
+  <key>CFBundleName</key>
+  <string>${name}</string>
+  <key>CFBundlePackageType</key>
+  <string>BNDL</string>
+  <key>CFBundleShortVersionString</key>
+  <string>0.1.0</string>
+  <key>CFBundleVersion</key>
+  <string>1</string>
+</dict>
+</plist>
+PLIST
+  fi
+  find "$bundle" -mindepth 1 -maxdepth 1 -exec mv {} "$stage/Contents/Resources/" \;
+  rm -rf "$bundle"
+  mkdir -p "$bundle"
+  mv "$stage/Contents" "$bundle/Contents"
+  rm -rf "$stage"
+  plutil -lint "$bundle/Contents/Info.plist"
+}
 copy_bundle() {
   marker="$1"
   shift
@@ -67,12 +110,13 @@ copy_bundle() {
     exit 1
   fi
   base=$(basename "$found")
+  echo "SPM bundle layout: $found"
+  find "$found" -maxdepth 2 -print
   rm -rf "$MACOS/$base" "$RES/$base"
-  # Nested bundles can be signed under Contents/MacOS. macOS 15 codesign
-  # rejects the same bundle when it is copied into Contents/Resources
-  # ("bundle format unrecognized"). Bundle.module looks in Resources first,
-  # so that path is a relative symlink to the signed MacOS copy.
   cp -R "$found" "$MACOS/$base"
+  normalize_bundle "$MACOS/$base"
+  # Bundle.module checks Contents/Resources first. The signed bundle stays
+  # under Contents/MacOS; Resources is a relative symlink to that copy.
   ln -s "../MacOS/$base" "$RES/$base"
   if ! find "$MACOS/$base" -name "$marker" | grep -q .; then
     echo "missing $marker from packaged app" >&2
