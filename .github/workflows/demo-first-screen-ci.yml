@@ -116,6 +116,12 @@ jobs:
           } > dist/BUILD_INFO.txt
           cat dist/BUILD_INFO.txt
 
+      - name: Unzip, relocate, and launch the finished app
+        working-directory: DemoFirstScreen
+        run: |
+          chmod +x scripts/relocated-launch-check.sh
+          bash scripts/relocated-launch-check.sh
+
       - name: Upload app zip and checksum
         uses: actions/upload-artifact@v4
         with:
@@ -125,6 +131,7 @@ jobs:
             DemoFirstScreen/dist/DemoFirstScreen.app.sha256
             DemoFirstScreen/dist/BUILD_INFO.txt
             DemoFirstScreen/dist/codesign-details.txt
+            DemoFirstScreen/dist/LAUNCH_CHECK.txt
           if-no-files-found: error
           retention-days: 14
 

@@ -49,8 +49,7 @@ rm -rf "$APP"
 mkdir -p "$MACOS" "$RES"
 
 cp "$BIN" "$MACOS/DemoFirstScreen"
-# Production resource bundles must travel with the executable for Bundle.module.
-# Copy next to the executable and into Resources. Test bundles are not selected.
+# Production resource bundles must travel inside the app. Test bundles are not selected.
 # SwiftPM emits a flat .bundle (Info.plist at the root). macOS codesign
 # rejects that layout as "bundle format unrecognized". A versioned bundle
 # keeps the same files under Contents/Resources, which is where
@@ -113,12 +112,16 @@ copy_bundle() {
   echo "SPM bundle layout: $found"
   find "$found" -maxdepth 2 -print
   rm -rf "$MACOS/$base" "$RES/$base"
-  cp -R "$found" "$MACOS/$base"
-  normalize_bundle "$MACOS/$base"
-  # Bundle.module checks Contents/Resources first. The signed bundle stays
-  # under Contents/MacOS; Resources is a relative symlink to that copy.
-  ln -s "../MacOS/$base" "$RES/$base"
-  if ! find "$MACOS/$base" -name "$marker" | grep -q .; then
+  # A symlink under Contents/Resources is not a bundle the process can open
+  # after the app has moved away from the build directory. Store one real
+  # versioned bundle where the app looks it up.
+  ditto "$found" "$RES/$base"
+  normalize_bundle "$RES/$base"
+  if [ -L "$RES/$base" ] || [ ! -d "$RES/$base" ]; then
+    echo "resource bundle must be a real directory: $RES/$base" >&2
+    exit 1
+  fi
+  if ! find "$RES/$base" -name "$marker" | grep -q .; then
     echo "missing $marker from packaged app" >&2
     exit 1
   fi
