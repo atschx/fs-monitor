@@ -1,0 +1,14 @@
+{
+  "DirectoryScanner.swift": {
+    "original": "/workspace/team/projects/fs-monitor/work/Cook/local-dev/fs-monitor/Sources/FSMonitorCore/DirectoryScanner.swift",
+    "SHA256": "2170719f545f8cedec3bbc6f0e7694ee6c1e5064b12f8ac52644545035cf1e80"
+  },
+  "Models.swift": {
+    "original": "/workspace/team/projects/fs-monitor/work/Cook/local-dev/fs-monitor/Sources/FSMonitorCore/Models.swift",
+    "SHA256": "a3ccf4a72daae6b1cfb52a00d33bd527add4a78cce6aa6b31970ac111a1e27f1"
+  },
+  "PathContainment.swift": {
+    "original": "/workspace/team/projects/fs-monitor/work/Cook/local-dev/fs-monitor/Sources/FSMonitorCore/PathContainment.swift",
+    "SHA256": "bf90168269be4987e6da66da5e5efb9edce3be443dfeac4d6f0da873f626b623"
+  }
+}

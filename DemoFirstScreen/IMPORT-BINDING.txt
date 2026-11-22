@@ -1,0 +1,10 @@
+attachment=startup-summary-prepared.tar.gz
+attachment_sha256=0b82d2ae30c92451aa6549f117fc910ed0e4b8d7c2ab9c668a46819151dd8168
+attachment_label=20261121-194544
+base_main=417ca1de16809da8d2c14abb93221b3680d42f23
+imported_tree=DemoFirstScreen plus SCOPE.txt, frozen-integration-reference.json, scanner-reuse-provenance.json
+byte_match=92 archive files matched the tar before the CI packaging edit
+ci_source_edit=DemoFirstScreen/scripts/package-macos.sh copies the app resource bundle and verifies the adhoc signature with --strict
+ci_workflow=.github/workflows/demo-first-screen-ci.yml
+not_run_in_ci=--startup-metadata-verify-only, --launch, diskutil against the runner Data volume, FDA/TCC changes, Release publish, Pages deploy
+gpu=separate job; private /Users/huluwa hash comparison is not part of CI

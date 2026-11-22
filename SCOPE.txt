@@ -1,0 +1,1 @@
+19:38 main entry supersedes folder-first: explicit consent/FDA guidance -> one verified startup Data namespace attempt; no automatic test traversal of user data. All tests/evidence own fixtures only.

@@ -1,0 +1,20 @@
+{
+  "id": "chartable-four-sectors-testOnly",
+  "testOnly": true,
+  "label": "几何单测夹具（禁止用于实际显示）",
+  "startedAt": "2026-11-21T00:00:00-08:00",
+  "endedAt": "2026-11-21T00:00:01-08:00",
+  "timeZoneName": "America/Los_Angeles",
+  "caliber": "logical",
+  "caliberNote": "testOnly fixture, not production data",
+  "apfsRootDataDedupVerified": true,
+  "nonOverlapVerified": true,
+  "activity": "notCollected",
+  "notes": ["testOnly=true; never mix into production display"],
+  "items": [
+    {"id": "Users", "name": "Users", "bytes": 100000000000, "errorCount": 0, "readStatus": "reportedComplete"},
+    {"id": "System", "name": "System", "bytes": 50000000000, "errorCount": 0, "readStatus": "reportedComplete"},
+    {"id": "Library", "name": "Library", "bytes": 30000000000, "errorCount": 0, "readStatus": "reportedComplete"},
+    {"id": "Applications", "name": "Applications", "bytes": 20000000000, "errorCount": 0, "readStatus": "reportedComplete"}
+  ]
+}

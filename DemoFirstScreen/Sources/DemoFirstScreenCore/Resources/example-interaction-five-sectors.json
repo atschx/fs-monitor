@@ -1,0 +1,27 @@
+{
+  "id": "demo-example-five-sectors-20261121",
+  "testOnly": false,
+  "exampleInteraction": true,
+  "label": "示例交互·非本机比例",
+  "startedAt": "2026-11-21T02:18:00-08:00",
+  "endedAt": "2026-11-21T02:18:00-08:00",
+  "timeZoneName": "America/Los_Angeles",
+  "caliber": "logical",
+  "caliberNote": "示例数值，非本机读取，与真实只读快照隔离",
+  "apfsRootDataDedupVerified": true,
+  "nonOverlapVerified": true,
+  "activity": "notCollected",
+  "notes": [
+    "示例交互·非本机比例",
+    "独立显式示例数据源，不是 testOnly 夹具，也不使用 Eric 只读 du 字节或 20/30/50/100、10/15/25/50 模板。",
+    "五项示例目录可加总；分母为示例合计 240 GB；角度合计 180°。",
+    "真实快照 eric-du-20261121-readonly 另行保留，不参与本示例面积计算。"
+  ],
+  "items": [
+    {"id": "Movies", "name": "影片", "bytes": 72000000000, "errorCount": 0, "readStatus": "reportedComplete"},
+    {"id": "Archives", "name": "归档", "bytes": 60000000000, "errorCount": 0, "readStatus": "reportedComplete"},
+    {"id": "Documents", "name": "文稿", "bytes": 48000000000, "errorCount": 0, "readStatus": "reportedComplete"},
+    {"id": "Pictures", "name": "图片", "bytes": 36000000000, "errorCount": 0, "readStatus": "reportedComplete"},
+    {"id": "Projects", "name": "项目", "bytes": 24000000000, "errorCount": 0, "readStatus": "reportedComplete"}
+  ]
+}
