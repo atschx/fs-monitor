@@ -18,9 +18,9 @@
     <h1>一双看着磁盘的眼睛</h1>
     <p class="lede">从点开图标开始，看见盘面；眼睛会跟着你看。</p>
     <div class="cta-row">
-      <a class="cta primary" href="https://github.com/atschx/fs-monitor/releases/download/v0.1.0-demo-preview.1/DemoFirstScreen.app.zip">下载未公证预览版</a>
+      <a class="cta primary" href="https://github.com/atschx/fs-monitor/releases/download/v0.1.0-demo-preview.2/DemoFirstScreen.app.zip">下载未公证预览版</a>
       <a class="cta secondary" href="guide.html">第一次打开</a>
-      <a class="cta secondary" href="https://github.com/atschx/fs-monitor/releases/tag/v0.1.0-demo-preview.1">核对发布记录</a>
+      <a class="cta secondary" href="https://github.com/atschx/fs-monitor/releases/tag/v0.1.0-demo-preview.2">核对发布记录</a>
     </div>
     <p class="status-chip">未公证预览版 · macOS 13+ Apple Silicon · 构建于 macOS 15.8.2 ARM · adhoc · 实机界面尚未验证</p>
   </header>
@@ -49,14 +49,16 @@
 
     <section aria-labelledby="get-title">
       <h2 id="get-title">获取与核对</h2>
-      <p class="section-lede">下载按钮指向本次预览版的长期公开文件。更早的 v0.1.1-beta.1 与 v0.1.0-test 仍保留，不是这次的下载。</p>
+      <p class="section-lede">下载按钮指向本次预览版的长期公开文件。更早的 v0.1.0-demo-preview.1、v0.1.1-beta.1 与 v0.1.0-test 仍保留，不是这次的下载。</p>
       <ul class="plain-list">
-        <li><a href="https://github.com/atschx/fs-monitor/releases/download/v0.1.0-demo-preview.1/DemoFirstScreen.app.zip">DemoFirstScreen.app.zip</a>，包内版本 <code>0.1.0-demo</code>。</li>
-        <li>SHA-256：<code>91dd03b57d0fcae67d622b0fb3520580dc5c6bbf1ba0d0ccdd4c3e36236e008d</code></li>
-        <li>发布提交 <code>5a4224034d30a928dea22fe1585f52fbba33e9d9</code>，源码树 <code>e20e29814f7e814115583c4c01e01eedcb0d759a</code>。已测合并提交 <code>8176c384e8d0bf5d2c5fda4963c6582351eb0de2</code> 与它是同一棵树。</li>
-        <li>请同时打开 <a href="https://github.com/atschx/fs-monitor/releases/download/v0.1.0-demo-preview.1/BUILD_INFO.txt">BUILD_INFO.txt</a> 和 <a href="https://github.com/atschx/fs-monitor/releases/download/v0.1.0-demo-preview.1/RELEASE_BINDING.txt">RELEASE_BINDING.txt</a>。</li>
+        <li><a href="https://github.com/atschx/fs-monitor/releases/download/v0.1.0-demo-preview.2/DemoFirstScreen.app.zip">DemoFirstScreen.app.zip</a>，包内版本 <code>0.1.0-demo</code>。</li>
+        <li>SHA-256：<code>efb49f05c1a4fb19c8b1535062ee16c0e746d784f6217388c9b2d7e5d998c283</code></li>
+        <li>发布提交 <code>f5b4b28d23d9fa24307d3890b1abd02a9525e49e</code>，源码树 <code>e0e496df55ebe8d79f3c56a0416545945008c8d9</code>。已测合并提交 <code>2e73aedb520f52818ce49ae8ff16387614e0cd4b</code> 与它是同一棵树。</li>
+        <li>请同时打开 <a href="https://github.com/atschx/fs-monitor/releases/download/v0.1.0-demo-preview.2/BUILD_INFO.txt">BUILD_INFO.txt</a> 和 <a href="https://github.com/atschx/fs-monitor/releases/download/v0.1.0-demo-preview.2/RELEASE_BINDING.txt">RELEASE_BINDING.txt</a>。</li>
+        <li>这次预览修了脱离构建目录后启动中断的问题。</li>
         <li>兼容目标是 macOS 13 或更新的 Apple Silicon（arm64）。这次的构建机器是 macOS 15.8.2 ARM，不是 macOS 13 实机。</li>
         <li>签名是 adhoc：没有 Developer ID，没有公证。系统可能会阻止打开。</li>
+        <li>CI 在搬走构建目录后，用 LaunchServices <code>open</code> 验证了启动。这不是一台真实 Mac 上的访达双击。完全磁盘访问和真实界面仍未做。</li>
       </ul>
       <p class="note">打开方式见 <a href="guide.html">第一次打开</a>。本页没有放置界面主图，因为还没有最终实拍。</p>
     </section>

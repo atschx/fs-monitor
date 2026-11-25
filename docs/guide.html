@@ -17,9 +17,9 @@
   </header>
   <main>
 <h1>第一次打开</h1>
-<p>这是未公证预览版 <strong>v0.1.0-demo-preview.1</strong> 的打开说明。包内版本是 <code>0.1.0-demo</code>。</p>
-<p>下载：<a href="https://github.com/atschx/fs-monitor/releases/download/v0.1.0-demo-preview.1/DemoFirstScreen.app.zip">DemoFirstScreen.app.zip</a></p>
-<p>发布记录：<a href="https://github.com/atschx/fs-monitor/releases/tag/v0.1.0-demo-preview.1">v0.1.0-demo-preview.1</a></p>
+<p>这是未公证预览版 <strong>v0.1.0-demo-preview.2</strong> 的打开说明。包内版本是 <code>0.1.0-demo</code>。</p>
+<p>下载：<a href="https://github.com/atschx/fs-monitor/releases/download/v0.1.0-demo-preview.2/DemoFirstScreen.app.zip">DemoFirstScreen.app.zip</a></p>
+<p>发布记录：<a href="https://github.com/atschx/fs-monitor/releases/tag/v0.1.0-demo-preview.2">v0.1.0-demo-preview.2</a></p>
 <h2>这个预览版是什么</h2>
 <p>点开图标后，先看见盘面，以及看着它的眼睛。移动指针时，眼睛会跟随，并包含待机。它不是先请你挑选一个文件夹，也不是一份完整的磁盘分析报告。</p>
 <p>应用里有启动盘概览入口。实机上的完全磁盘访问、真实全盘映射和真实界面尚未验证。不要把它理解成已经准确找出全盘最大的部分、正在持续监控、能够判断写入进程，或已经达到 30 毫秒以内。</p>
@@ -29,13 +29,14 @@
 <li>这次的构建机器是 macOS 15.8.2 ARM。最低系统标记是 13.0。没有在 macOS 13 实机上运行过这个包。</li>
 <li>签名是 adhoc。没有 Developer ID，也没有公证。</li>
 <li>系统可能会阻止打开。这是未公证预览版的正常情况。</li>
+<li>这次预览修了脱离构建目录后启动中断的问题。CI 在搬走构建目录后，用 LaunchServices <code>open</code> 验证了启动。这不是一台真实 Mac 上的访达双击。</li>
 </ul>
 <p>ZIP 的 SHA-256：</p>
 <pre><code>
-91dd03b57d0fcae67d622b0fb3520580dc5c6bbf1ba0d0ccdd4c3e36236e008d
+efb49f05c1a4fb19c8b1535062ee16c0e746d784f6217388c9b2d7e5d998c283
 
 </code></pre>
-<p>请再对照发布页上的 <code>BUILD_INFO.txt</code> 与 <code>RELEASE_BINDING.txt</code>。发布提交是 <code>5a4224034d30a928dea22fe1585f52fbba33e9d9</code>。</p>
+<p>请再对照发布页上的 <code>BUILD_INFO.txt</code> 与 <code>RELEASE_BINDING.txt</code>。发布提交是 <code>f5b4b28d23d9fa24307d3890b1abd02a9525e49e</code>。</p>
 <h2>允许打开这一次</h2>
 <ol class="plain-list">
 <li>下载并解压 <code>DemoFirstScreen.app.zip</code>。</li>
@@ -53,7 +54,7 @@
 </ol>
 <p>回到 App 不等于权限已经成功。读不到的位置不会被说成 0，也不会被说成已经看完整个磁盘。没有在 App 内同意时，不会去检查启动盘。</p>
 <h2>还没有验证的部分</h2>
-<p>实机完全磁盘访问、真实全盘数据、真实界面、功耗，以及物理时间，都不在这次预览的已验证范围内。本页不放界面主图。</p>
+<p>实机完全磁盘访问、真实全盘数据、真实界面、功耗，以及物理时间，都不在这次预览的已验证范围内。CI 的启动核验不是访达双击。本页不放界面主图。</p>
   </main>
   <footer>
     <p><a href="index.html">返回介绍</a> · <a href="https://github.com/atschx/fs-monitor/blob/main/docs/guide.md">guide.md 源文件</a></p>
