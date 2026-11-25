@@ -1,10 +1,10 @@
 # 第一次打开
 
-这是未公证预览版 **v0.1.0-demo-preview.1** 的打开说明。包内版本是 `0.1.0-demo`。
+这是未公证预览版 **v0.1.0-demo-preview.2** 的打开说明。包内版本是 `0.1.0-demo`。
 
-下载：[DemoFirstScreen.app.zip](https://github.com/atschx/fs-monitor/releases/download/v0.1.0-demo-preview.1/DemoFirstScreen.app.zip)
+下载：[DemoFirstScreen.app.zip](https://github.com/atschx/fs-monitor/releases/download/v0.1.0-demo-preview.2/DemoFirstScreen.app.zip)
 
-发布记录：[v0.1.0-demo-preview.1](https://github.com/atschx/fs-monitor/releases/tag/v0.1.0-demo-preview.1)
+发布记录：[v0.1.0-demo-preview.2](https://github.com/atschx/fs-monitor/releases/tag/v0.1.0-demo-preview.2)
 
 ## 这个预览版是什么
 
@@ -18,14 +18,15 @@
 - 这次的构建机器是 macOS 15.8.2 ARM。最低系统标记是 13.0。没有在 macOS 13 实机上运行过这个包。
 - 签名是 adhoc。没有 Developer ID，也没有公证。
 - 系统可能会阻止打开。这是未公证预览版的正常情况。
+- 这次预览修了脱离构建目录后启动中断的问题。CI 在搬走构建目录后，用 LaunchServices `open` 验证了启动。这不是一台真实 Mac 上的访达双击。
 
 ZIP 的 SHA-256：
 
 ```
-91dd03b57d0fcae67d622b0fb3520580dc5c6bbf1ba0d0ccdd4c3e36236e008d
+efb49f05c1a4fb19c8b1535062ee16c0e746d784f6217388c9b2d7e5d998c283
 ```
 
-请再对照发布页上的 `BUILD_INFO.txt` 与 `RELEASE_BINDING.txt`。发布提交是 `5a4224034d30a928dea22fe1585f52fbba33e9d9`。
+请再对照发布页上的 `BUILD_INFO.txt` 与 `RELEASE_BINDING.txt`。发布提交是 `f5b4b28d23d9fa24307d3890b1abd02a9525e49e`。
 
 ## 允许打开这一次
 
@@ -48,4 +49,4 @@ ZIP 的 SHA-256：
 
 ## 还没有验证的部分
 
-实机完全磁盘访问、真实全盘数据、真实界面、功耗，以及物理时间，都不在这次预览的已验证范围内。本页不放界面主图。
+实机完全磁盘访问、真实全盘数据、真实界面、功耗，以及物理时间，都不在这次预览的已验证范围内。CI 的启动核验不是访达双击。本页不放界面主图。
