@@ -4,13 +4,9 @@ import Foundation
 /// Core stays Foundation-only; the App target loads NSImage from these URLs.
 public enum DemoArtwork {
     public static func url(named name: String) -> URL? {
-        let bundle = Bundle.module
         let png = name.hasSuffix(".png") ? name : "\(name).png"
-        return bundle.url(forResource: png, withExtension: nil, subdirectory: "Resources/artwork")
-            ?? bundle.url(forResource: name, withExtension: "png", subdirectory: "Resources/artwork")
-            ?? bundle.url(forResource: png, withExtension: nil, subdirectory: "artwork")
-            ?? bundle.url(forResource: name, withExtension: "png", subdirectory: "artwork")
-            ?? bundle.url(forResource: png, withExtension: nil)
-            ?? bundle.url(forResource: name, withExtension: "png")
+        let stem = png.hasSuffix(".png") ? String(png.dropLast(4)) : name
+        return ModuleBundle.url(named: ModuleBundle.coreName, resource: png, ext: nil, subdirectories: ["Resources/artwork", "artwork", nil])
+            ?? ModuleBundle.url(named: ModuleBundle.coreName, resource: stem, ext: "png", subdirectories: ["Resources/artwork", "artwork", nil])
     }
 }

@@ -199,10 +199,7 @@ public enum SnapshotLoader {
     }
 
     public static func loadBundledResource(named name: String) throws -> DemoSnapshot {
-        let bundle = Bundle.module
-        let url = bundle.url(forResource: name, withExtension: nil, subdirectory: "Resources")
-            ?? bundle.url(forResource: name, withExtension: nil)
-            ?? bundle.resourceURL?.appendingPathComponent("Resources", isDirectory: true).appendingPathComponent(name)
+        let url = ModuleBundle.url(named: ModuleBundle.coreName, resource: name, ext: nil, subdirectories: ["Resources", nil])
         guard let url else { throw SnapshotLoadError.resourceMissing(name) }
         do {
             return try decode(Data(contentsOf: url))

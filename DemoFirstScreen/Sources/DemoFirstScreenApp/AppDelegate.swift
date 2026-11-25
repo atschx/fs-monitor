@@ -5,6 +5,14 @@ import DemoFirstScreenCore
 import FolderSnapshotAdapter
 import ReadOnlyScanner
 
+private enum StartupFailure {
+    static func exit(_ message: String) -> Never {
+        fputs("Startup resources unavailable: \(message)\n", stderr)
+        fflush(stderr)
+        Darwin.exit(1)
+    }
+}
+
 @main
 enum DemoFirstScreenMain {
     static func main() {
@@ -47,8 +55,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Explicit example is verification-only. Default opens neutral; no scanner/panel.
         let example=FolderAdapter.neutral()
-        guard DemoArtwork.url(named: "d2-hub") != nil, DemoArtwork.url(named: "d2-eyes-rest") != nil else {
-            fatalError("documented D2 artwork missing from bundle")
+        guard let hubURL = DemoArtwork.url(named: "d2-hub"), let restURL = DemoArtwork.url(named: "d2-eyes-rest") else {
+            StartupFailure.exit("Required startup artwork is not in the app resource bundle.")
         }
 
         let initial = FramePresentation.make(session: InteractionSession(snapshot: example), motion: .reduced, pointerInsideWindow: false)
@@ -58,7 +66,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let i=args.firstIndex(of:"--integrated-gpu-diagnostics-dir")
             let out=i.flatMap{$0+1<args.count ? URL(fileURLWithPath:args[$0+1],isDirectory:true):nil}
             gpu=try IntegratedGPUEyes(backend:MetalBackend(),diagnostics:out,runIdleTrial:args.contains("--safe-idle-finite-trial"),startingTarget:initial.eye.resolvedTarget)
-        }catch{fatalError("GPU backend unavailable; CPU reference not substituted: \(error)")}
+        }catch{StartupFailure.exit("GPU backend unavailable; CPU reference not substituted: \(error)")}
         let eyes = EyeFrameDriver(target: initial.eye.resolvedTarget,gpu:gpu)
         let store=StartupSummaryStore();self.summaryStore=store
         precondition(store.scansStarted==0 && store.state.root==nil && !store.state.reading)
@@ -102,6 +110,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             window?.makeKey()
             NSApp.activate(ignoringOtherApps: true)
             if let content=window?.contentView {Self.recordOwnCatcherGeometry(content)}
+            Self.writeStartupReceipt(hub: hubURL, rest: restURL, scansStarted: store.scansStarted)
         }
         eyes.start()
 
@@ -152,6 +161,23 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @objc private func closeDemoWindow() {
         window?.close()
+    }
+
+    private static func writeStartupReceipt(hub: URL, rest: URL, scansStarted: Int) {
+        guard let path = ProcessInfo.processInfo.environment["FS_MONITOR_STARTUP_RECEIPT"], !path.isEmpty else { return }
+        let metal = ModuleBundle.url(named: ModuleBundle.appName, resource: "Eyes", ext: "metal", subdirectories: ["Resources", nil])
+        func bytes(_ url: URL?) -> Int {
+            guard let url, let data = try? Data(contentsOf: url) else { return -1 }
+            return data.count
+        }
+        let body = "hub_bytes=\(bytes(hub))\nrest_bytes=\(bytes(rest))\nmetal_bytes=\(bytes(metal))\nwindow=ready\nscansStarted=\(scansStarted)\n"
+        do {
+            try body.write(toFile: path, atomically: true, encoding: .utf8)
+            fputs("startup-receipt-written\n", stdout)
+            fflush(stdout)
+        } catch {
+            StartupFailure.exit("could not record startup receipt")
+        }
     }
 
     private static func evidenceDirectory() -> String? {

@@ -26,7 +26,7 @@ final class MetalBackend {
         let begin=CACurrentMediaTime()
         guard let d=MTLCreateSystemDefaultDevice(),let q=d.makeCommandQueue() else {throw StudyFailure("No Metal device/queue. GPU evidence NOT produced; no CPU substitution.")}
         device=d;queue=q
-        guard let url=Bundle.module.url(forResource:"Eyes",withExtension:"metal",subdirectory:"Resources") else {throw StudyFailure("Missing copied Eyes.metal resource")}
+        guard let url=ModuleBundle.url(named:ModuleBundle.appName,resource:"Eyes",ext:"metal",subdirectories:["Resources",nil]) else {throw StudyFailure("Missing copied Eyes.metal resource")}
         let data=try Data(contentsOf:url)
         shaderSHA256=SHA256.hash(data:data).map{String(format:"%02x",$0)}.joined()
         let options=MTLCompileOptions()
